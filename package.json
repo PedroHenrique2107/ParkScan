@@ -5,8 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "typecheck": "node ./node_modules/typescript/bin/tsc",
+    "build": "npm run typecheck && npm run build:vite",
+    "build:vite": "node ./node_modules/vite/bin/vite.js build",
     "preview": "vite preview"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "dependencies": {
     "react": "^18.3.1",
