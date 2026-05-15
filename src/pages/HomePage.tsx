@@ -39,9 +39,9 @@ export default function HomePage() {
       <div className="bg-gradient-to-b from-blue-600 to-blue-700 px-5 pt-10 pb-8 text-white">
         <div className="flex items-center gap-2 mb-1">
           <CarIcon className="w-6 h-6 opacity-80" />
-          <span className="text-xs font-semibold uppercase tracking-widest opacity-80">Estacionamento</span>
+          <span className="text-xs font-semibold uppercase tracking-widest opacity-80">Estacionamento | MBL PARK - Avenida</span>
         </div>
-        <h1 className="text-2xl font-bold">ConferePátio</h1>
+        <h1 className="text-2xl font-bold">ParkScan</h1>
         <p className="text-blue-200 text-sm mt-0.5">
           {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
         </p>

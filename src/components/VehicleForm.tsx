@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Floor, ParkingSpot, Vehicle } from '../types'
 import { registerVehicle, updateVehicle } from '../services/vehicleService'
+import { formatPlate, isValidPlate } from '../lib/plate'
 import { CAR_MODELS } from '../data/carModels'
 import Autocomplete from './Autocomplete'
 import { XIcon } from './Icons'
@@ -24,12 +25,13 @@ export default function VehicleForm({ floor, spot, vehicle, onSave, onClose }: V
   const [error, setError] = useState('')
 
   function handlePlate(val: string) {
-    setPlate(val.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 8))
+    setPlate(formatPlate(val))
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!plate.trim()) { setError('Placa é obrigatória'); return }
+    if (!isValidPlate(plate)) { setError('Informe uma placa no formato ABC-1234 ou ABC1D23'); return }
     if (!model.trim()) { setError('Modelo é obrigatório'); return }
 
     if (vehicle) {
@@ -44,7 +46,6 @@ export default function VehicleForm({ floor, spot, vehicle, onSave, onClose }: V
     <div className="fixed inset-0 z-50 flex items-end">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white rounded-t-2xl w-full shadow-2xl max-h-[92vh] overflow-y-auto">
-        {/* Handle bar */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 bg-gray-300 rounded-full" />
         </div>
@@ -67,7 +68,6 @@ export default function VehicleForm({ floor, spot, vehicle, onSave, onClose }: V
         </div>
 
         <form onSubmit={handleSubmit} className="px-5 pb-8 space-y-4">
-          {/* Piso + Vaga (read-only) */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={LABEL}>Piso</label>
@@ -83,7 +83,6 @@ export default function VehicleForm({ floor, spot, vehicle, onSave, onClose }: V
             </div>
           </div>
 
-          {/* Placa */}
           <div>
             <label htmlFor="plate" className={LABEL}>Placa *</label>
             <input
@@ -91,14 +90,13 @@ export default function VehicleForm({ floor, spot, vehicle, onSave, onClose }: V
               type="text"
               value={plate}
               onChange={(e) => handlePlate(e.target.value)}
-              placeholder="ABC1D23"
+              placeholder="ABC-1234 ou ABC1D23"
               className={INPUT}
               inputMode="text"
               autoCapitalize="characters"
             />
           </div>
 
-          {/* Modelo com autocomplete */}
           <div>
             <label htmlFor="model" className={LABEL}>Modelo *</label>
             <Autocomplete
@@ -111,7 +109,6 @@ export default function VehicleForm({ floor, spot, vehicle, onSave, onClose }: V
             />
           </div>
 
-          {/* Observação */}
           <div>
             <label htmlFor="obs" className={LABEL}>Observação</label>
             <textarea

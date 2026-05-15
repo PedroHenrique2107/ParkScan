@@ -1,6 +1,7 @@
 import type { Vehicle, VehicleHistory } from '../types'
 import * as repo from '../storage/localStorageRepository'
 import { getFloorById, getSpotsByFloor } from './floorService'
+import { cleanPlate, formatPlate } from '../lib/plate'
 
 function genId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`
@@ -27,7 +28,7 @@ export function registerVehicle(
 ): Vehicle {
   const vehicle: Vehicle = {
     id: genId(),
-    plate: plate.toUpperCase().replace(/\s/g, ''),
+    plate: formatPlate(plate),
     model,
     floorId,
     spotId,
@@ -54,7 +55,7 @@ export function updateVehicle(id: string, plate: string, model: string, observat
   if (idx === -1) return
   vehicles[idx] = {
     ...vehicles[idx],
-    plate: plate.toUpperCase().replace(/\s/g, ''),
+    plate: formatPlate(plate),
     model,
     observation,
   }
@@ -112,6 +113,7 @@ export function removeVehicle(vehicleId: string): void {
 
 export function searchVehicles(query: string): Vehicle[] {
   const q = query.toLowerCase().trim()
+  const cleanQ = cleanPlate(query).toLowerCase()
   if (!q) return []
 
   const floors = repo
@@ -125,11 +127,38 @@ export function searchVehicles(query: string): Vehicle[] {
     if (v.status !== 'PARKED') return false
     const floorName = (floors[v.floorId] ?? '').toLowerCase()
     const spotNum = (spots[v.spotId] ?? '').toLowerCase()
+    const plate = v.plate.toLowerCase()
+    const cleanVehiclePlate = cleanPlate(v.plate).toLowerCase()
     return (
-      v.plate.toLowerCase().includes(q) ||
+      plate.includes(q) ||
+      (!!cleanQ && cleanVehiclePlate.includes(cleanQ)) ||
       v.model.toLowerCase().includes(q) ||
       floorName.includes(q) ||
       spotNum.includes(q)
     )
   })
+}
+
+export function clearTodayVehicles(): void {
+  const today = new Date().toDateString()
+  const vehicles = repo.getVehicles()
+  const removedIds = new Set(
+    vehicles
+      .filter((v) => {
+        if (v.status === 'PARKED') return true
+        return !!v.movedDownAt && new Date(v.movedDownAt).toDateString() === today
+      })
+      .map((v) => v.id),
+  )
+
+  if (removedIds.size === 0) return
+
+  repo.saveVehicles(vehicles.filter((v) => !removedIds.has(v.id)))
+  repo.saveSpots(
+    repo.getSpots().map((spot) => (
+      spot.vehicleId && removedIds.has(spot.vehicleId)
+        ? { ...spot, vehicleId: undefined }
+        : spot
+    )),
+  )
 }
