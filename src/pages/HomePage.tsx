@@ -39,7 +39,7 @@ export default function HomePage() {
       <div className="bg-gradient-to-b from-blue-600 to-blue-700 px-5 pt-10 pb-8 text-white">
         <div className="flex items-center gap-2 mb-1">
           <CarIcon className="w-6 h-6 opacity-80" />
-          <span className="text-xs font-semibold uppercase tracking-widest opacity-80">Estacionamento | MBL PARK - Avenida</span>
+          <span className="text-xs font-semibold uppercase tracking-widest opacity-80">Luan você é um salafrário sabia | ASS: Trade Tower </span>
         </div>
         <h1 className="text-2xl font-bold">ParkScan</h1>
         <p className="text-blue-200 text-sm mt-0.5">
