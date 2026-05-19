@@ -13,7 +13,7 @@ export default function SpotCard({ spot, vehicle, onClick }: SpotCardProps) {
     <button
       onClick={onClick}
       className={`
-        relative aspect-square rounded-xl border-2 flex flex-col items-center justify-center
+        w-full aspect-square relative rounded-xl border-2 flex flex-col items-center justify-center
         p-1 text-center transition-all active:scale-95 touch-manipulation select-none
         ${
           occupied

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { Floor, ParkingSpot, Vehicle } from '../types'
 import { getFloorById, getSpotsByFloor } from '../services/floorService'
@@ -57,6 +57,15 @@ export default function FloorMapPage() {
     load()
   }
 
+  const hasLayout = spots.length > 0 && spots.every((s) => s.x !== undefined)
+  const canvasDims = useMemo(
+    () => ({
+      width: Math.max(320, spots.reduce((m, s) => Math.max(m, (s.x ?? 0) + 56 + 16), 0)),
+      height: Math.max(320, spots.reduce((m, s) => Math.max(m, (s.y ?? 0) + 56 + 16), 0)),
+    }),
+    [spots],
+  )
+
   if (!floor) return null
 
   const occupied = spots.filter((s) => !!s.vehicleId).length
@@ -87,9 +96,33 @@ export default function FloorMapPage() {
       <div className="p-3">
         {spots.length === 0 ? (
           <p className="text-center text-gray-400 text-sm mt-10">Nenhuma vaga configurada.</p>
+        ) : hasLayout ? (
+          <div className="overflow-auto">
+            <div
+              className="relative"
+              style={{ width: canvasDims.width, height: canvasDims.height }}
+            >
+              {spots.map((spot) => {
+                const vehicle = spot.vehicleId ? vehicleMap[spot.vehicleId] : undefined
+                return (
+                  <div
+                    key={spot.id}
+                    className="absolute"
+                    style={{ left: spot.x, top: spot.y, width: 56, height: 56 }}
+                  >
+                    <SpotCard
+                      spot={spot}
+                      vehicle={vehicle}
+                      onClick={() => handleSpotClick(spot)}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         ) : (
           <div
-            className={`grid gap-2`}
+            className="grid gap-2"
             style={{ gridTemplateColumns: `repeat(${floor.columns}, 1fr)` }}
           >
             {spots.map((spot) => {

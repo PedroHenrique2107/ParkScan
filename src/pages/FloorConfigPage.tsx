@@ -1,11 +1,38 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getFloorById, createFloor, updateFloor } from '../services/floorService'
+import { getFloorById, createFloor, updateFloor, getSpotsByFloor } from '../services/floorService'
 import Header from '../components/Header'
+import { CarIcon, TrashIcon } from '../components/Icons'
 
 const INPUT =
   'w-full px-4 py-3.5 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
 const LABEL = 'block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5'
+const SPOT_SIZE = 56
+
+interface LayoutSpot {
+  id: string
+  number: string
+  x: number
+  y: number
+}
+
+function generateDefaultLayout(): LayoutSpot[] {
+  const spots: LayoutSpot[] = []
+  let n = 1
+  for (let row = 0; row < 5; row++) {
+    for (let col = 0; col < 2; col++) {
+      spots.push({ id: `new-${n}`, number: String(n).padStart(2, '0'), x: col * 64, y: row * 64 })
+      n++
+    }
+  }
+  for (let row = 0; row < 5; row++) {
+    for (let col = 0; col < 2; col++) {
+      spots.push({ id: `new-${n}`, number: String(n).padStart(2, '0'), x: 192 + col * 64, y: row * 64 })
+      n++
+    }
+  }
+  return spots
+}
 
 export default function FloorConfigPage() {
   const navigate = useNavigate()
@@ -13,150 +40,266 @@ export default function FloorConfigPage() {
   const isEdit = !!floorId
 
   const [name, setName] = useState('')
-  const [totalSpots, setTotalSpots] = useState('20')
-  const [columns, setColumns] = useState('4')
+  const [description, setDescription] = useState('')
+  const [layoutSpots, setLayoutSpots] = useState<LayoutSpot[]>([])
   const [error, setError] = useState('')
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const dragOffsetRef = useRef({ startMouseX: 0, startMouseY: 0, startSpotX: 0, startSpotY: 0 })
+  const canvasRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (isEdit && floorId) {
       const floor = getFloorById(floorId)
       if (floor) {
         setName(floor.name)
-        setTotalSpots(String(floor.totalSpots))
-        setColumns(String(floor.columns))
+        setDescription(floor.description ?? '')
+        const spots = getSpotsByFloor(floorId)
+        setLayoutSpots(
+          spots.map((s, i) => ({
+            id: s.id,
+            number: s.number,
+            x: s.x ?? (i % 4) * 64,
+            y: s.y ?? Math.floor(i / 4) * 64,
+          })),
+        )
       }
     }
   }, [isEdit, floorId])
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError('')
+  useEffect(() => {
+    if (!draggingId) return
 
-    const spots = parseInt(totalSpots)
-    const cols = parseInt(columns)
-
-    if (!name.trim()) { setError('O nome do piso é obrigatório.'); return }
-    if (isNaN(spots) || spots < 1 || spots > 500) { setError('Quantidade de vagas deve ser entre 1 e 500.'); return }
-    if (isNaN(cols) || cols < 2 || cols > 6) { setError('Colunas deve ser entre 2 e 6.'); return }
-
-    if (isEdit && floorId) {
-      updateFloor(floorId, name.trim(), spots, cols)
-    } else {
-      createFloor(name.trim(), spots, cols)
+    function onMove(e: PointerEvent) {
+      const dx = e.clientX - dragOffsetRef.current.startMouseX
+      const dy = e.clientY - dragOffsetRef.current.startMouseY
+      const newX = Math.max(0, dragOffsetRef.current.startSpotX + dx)
+      const newY = Math.max(0, dragOffsetRef.current.startSpotY + dy)
+      setLayoutSpots((prev) =>
+        prev.map((s) => (s.id === draggingId ? { ...s, x: newX, y: newY } : s)),
+      )
     }
 
+    function onUp() {
+      setDraggingId(null)
+    }
+
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+  }, [draggingId])
+
+  function startDrag(e: React.PointerEvent, spot: LayoutSpot) {
+    e.preventDefault()
+    dragOffsetRef.current = {
+      startMouseX: e.clientX,
+      startMouseY: e.clientY,
+      startSpotX: spot.x,
+      startSpotY: spot.y,
+    }
+    setDraggingId(spot.id)
+  }
+
+  const canvasDims = useMemo(
+    () => ({
+      width: Math.max(400, layoutSpots.reduce((m, s) => Math.max(m, s.x + SPOT_SIZE + 24), 0)),
+      height: Math.max(380, layoutSpots.reduce((m, s) => Math.max(m, s.y + SPOT_SIZE + 24), 0)),
+    }),
+    [layoutSpots],
+  )
+
+  function handleSave() {
+    setError('')
+    if (!name.trim()) {
+      setError('O nome do piso é obrigatório.')
+      return
+    }
+    if (isEdit && floorId) {
+      updateFloor(floorId, name.trim(), description.trim(), layoutSpots)
+    } else {
+      createFloor(name.trim(), description.trim(), layoutSpots)
+    }
     navigate('/floors')
   }
 
-  const spotsNum = parseInt(totalSpots) || 0
-
   return (
-    <div className="min-h-full">
-      <Header
-        title={isEdit ? 'Editar Piso' : 'Novo Piso'}
-        showBack
-        backTo="/floors"
-      />
+    <div className="min-h-full bg-gray-50 pb-20">
+      <Header title={isEdit ? 'Editar Piso' : 'Novo Piso'} showBack backTo="/floors" />
 
-      <form onSubmit={handleSubmit} className="p-4 space-y-5 max-w-lg mx-auto">
-        {/* Nome */}
-        <div>
-          <label className={LABEL}>Nome do Piso</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Ex: Piso 1, Subsolo, Térreo..."
-            className={INPUT}
-          />
-        </div>
+      <div className="p-4 space-y-4 max-w-4xl mx-auto">
+        {/* Section 1: Name + Description */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          <h2 className="text-sm font-semibold text-gray-800 mb-0.5">Cadastro de Piso</h2>
+          <p className="text-xs text-gray-400 mb-4">
+            Configure o nome, descrição e layout das vagas do piso
+          </p>
 
-        {/* Vagas */}
-        <div>
-          <label className={LABEL}>Quantidade de Vagas</label>
-          <input
-            type="number"
-            value={totalSpots}
-            onChange={(e) => setTotalSpots(e.target.value)}
-            min="1"
-            max="500"
-            inputMode="numeric"
-            className={INPUT}
-          />
-          {spotsNum > 0 && (
-            <p className="text-xs text-gray-400 mt-1.5">
-              Vagas serão numeradas de 01 a {String(spotsNum).padStart(2, '0')}.
-            </p>
-          )}
-        </div>
-
-        {/* Colunas */}
-        <div>
-          <label className={LABEL}>Colunas na grade visual</label>
-          <div className="grid grid-cols-5 gap-2">
-            {[2, 3, 4, 5, 6].map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setColumns(String(c))}
-                className={`py-3 rounded-xl font-bold text-sm border-2 transition-colors touch-manipulation ${
-                  columns === String(c)
-                    ? 'bg-blue-600 border-blue-600 text-white'
-                    : 'bg-white border-gray-200 text-gray-600 active:bg-gray-50'
-                }`}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs text-gray-400 mt-1.5">Colunas exibidas no mapa de vagas.</p>
-        </div>
-
-        {/* Preview mini grid */}
-        {spotsNum > 0 && spotsNum <= 50 && (
-          <div>
-            <label className={LABEL}>Preview da grade</label>
-            <div
-              className={`grid gap-1.5`}
-              style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
-            >
-              {Array.from({ length: Math.min(spotsNum, 30) }).map((_, i) => (
-                <div
-                  key={i}
-                  className="aspect-square rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-[9px] text-emerald-500 font-bold"
-                >
-                  {String(i + 1).padStart(2, '0')}
-                </div>
-              ))}
-              {spotsNum > 30 && (
-                <div className="aspect-square rounded-lg bg-gray-100 flex items-center justify-center text-[9px] text-gray-400 font-bold col-span-1">
-                  +{spotsNum - 30}
-                </div>
-              )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={LABEL}>
+                Nome do Piso{' '}
+                <span className="text-red-400 normal-case font-normal tracking-normal">*</span>
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ex: Piso 1, Subsolo, Térreo..."
+                className={INPUT}
+              />
+            </div>
+            <div>
+              <label className={LABEL}>Descrição</label>
+              <input
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Ex: Piso próximo à entrada..."
+                className={INPUT}
+              />
             </div>
           </div>
-        )}
 
-        {error && (
-          <p className="text-red-500 text-sm text-center bg-red-50 py-3 rounded-xl">{error}</p>
-        )}
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={() => setLayoutSpots([])}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
+            >
+              <TrashIcon className="w-4 h-4" />
+              Limpar Todas as Vagas
+            </button>
+          </div>
+        </div>
 
-        <div className="flex gap-3 pt-2">
+        {/* Section 2: Layout */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          <h2 className="text-sm font-semibold text-gray-800 mb-0.5">Layout das Vagas</h2>
+          <p className="text-xs text-gray-400 mb-4">
+            Carregue o layout padrão e ajuste as posições das vagas conforme necessário.
+          </p>
+
           <button
             type="button"
-            onClick={() => navigate('/floors')}
-            className="flex-1 py-4 rounded-xl bg-gray-100 text-gray-700 font-semibold text-sm active:bg-gray-200 touch-manipulation"
+            onClick={() => setLayoutSpots(generateDefaultLayout())}
+            className="mb-4 inline-flex items-center px-4 py-2 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
           >
-            Cancelar
+            Carregar Layout Padrão
           </button>
-          <button
-            type="submit"
-            className="flex-1 py-4 rounded-xl bg-blue-600 text-white font-semibold text-sm active:bg-blue-700 touch-manipulation"
+
+          {/* Canvas */}
+          <div
+            className="overflow-auto rounded-xl border-2 border-dashed border-gray-200"
+            style={{ minHeight: 380 }}
           >
-            {isEdit ? 'Salvar' : 'Criar Piso'}
-          </button>
+            <div
+              ref={canvasRef}
+              className="relative"
+              style={{
+                width: canvasDims.width,
+                height: canvasDims.height,
+                minWidth: '100%',
+                minHeight: 380,
+              }}
+            >
+              {layoutSpots.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <p className="text-sm text-gray-300 text-center px-4">
+                    Nenhuma vaga adicionada. Clique em "Carregar Layout Padrão".
+                  </p>
+                </div>
+              )}
+
+              {layoutSpots.map((spot) => (
+                <div
+                  key={spot.id}
+                  className={`absolute flex flex-col items-center justify-center rounded-xl border-2 select-none
+                    ${
+                      draggingId === spot.id
+                        ? 'border-blue-500 bg-blue-50 shadow-lg z-20 cursor-grabbing'
+                        : 'border-blue-200 bg-white hover:border-blue-400 hover:shadow-md z-10 cursor-grab'
+                    }`}
+                  style={{
+                    left: spot.x,
+                    top: spot.y,
+                    width: SPOT_SIZE,
+                    height: SPOT_SIZE,
+                    touchAction: 'none',
+                  }}
+                  onPointerDown={(e) => startDrag(e, spot)}
+                  onMouseEnter={() => setHoveredId(spot.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                >
+                  <CarIcon className="w-5 h-5 text-blue-500 pointer-events-none" />
+                  <span className="text-[10px] font-bold text-blue-600 mt-0.5 pointer-events-none">
+                    {spot.number}
+                  </span>
+
+                  {hoveredId === spot.id && draggingId !== spot.id && (
+                    <button
+                      type="button"
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={() =>
+                        setLayoutSpots((prev) => prev.filter((s) => s.id !== spot.id))
+                      }
+                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 z-30 text-xs leading-none"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="flex items-center gap-2 mt-3">
+            <CarIcon className="w-4 h-4 text-blue-400" />
+            <span className="text-xs text-gray-500">Vaga - Arraste para reposicionar</span>
+          </div>
+
+          <p className="text-xs text-amber-600 mt-2 flex items-start gap-1">
+            <span className="shrink-0">💡</span>
+            <span>
+              Dica: Arraste as vagas para ajustar suas posições. Passe o mouse sobre uma vaga e
+              clique no X para removê-la.
+            </span>
+          </p>
         </div>
-      </form>
+
+        {error && (
+          <p className="text-red-500 text-sm text-center bg-red-50 py-3 rounded-xl border border-red-100">
+            {error}
+          </p>
+        )}
+      </div>
+
+      {/* Save button — fixed bottom right */}
+      <div className="fixed bottom-0 right-0 p-4 z-40">
+        <button
+          type="button"
+          onClick={handleSave}
+          className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gray-900 text-white font-semibold text-sm shadow-xl hover:bg-gray-800 active:bg-gray-950 touch-manipulation"
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+            />
+          </svg>
+          Salvar Piso
+        </button>
+      </div>
     </div>
   )
 }
