@@ -120,7 +120,6 @@ export default function FloorConfigPage() {
   const isEdit = !!floorId
 
   const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
   const [layoutSpots, setLayoutSpots] = useState<LayoutSpot[]>([])
   const [error, setError] = useState('')
   const [hoveredId, setHoveredId] = useState<string | null>(null)
@@ -133,7 +132,6 @@ export default function FloorConfigPage() {
       const floor = getFloorById(floorId)
       if (floor) {
         setName(floor.name)
-        setDescription(floor.description ?? '')
         const spots = getSpotsByFloor(floorId)
         setLayoutSpots(
           spots.map((s, i) => ({
@@ -213,9 +211,9 @@ export default function FloorConfigPage() {
       return
     }
     if (isEdit && floorId) {
-      updateFloor(floorId, name.trim(), description.trim(), layoutSpots)
+      updateFloor(floorId, name.trim(), '', layoutSpots)
     } else {
-      createFloor(name.trim(), description.trim(), layoutSpots)
+      createFloor(name.trim(), '', layoutSpots)
     }
     navigate('/floors')
   }
@@ -225,37 +223,25 @@ export default function FloorConfigPage() {
       <Header title={isEdit ? 'Editar Piso' : 'Novo Piso'} showBack backTo="/floors" />
 
       <div className="p-4 space-y-4 max-w-4xl mx-auto">
-        {/* Section 1: Name + Description */}
+        {/* Section 1: Name */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
           <h2 className="text-sm font-semibold text-gray-800 mb-0.5">Cadastro de Piso</h2>
           <p className="text-xs text-gray-400 mb-4">
-            Configure o nome, descrição e layout das vagas do piso
+            Configure o nome e layout das vagas do piso
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className={LABEL}>
-                Nome do Piso{' '}
-                <span className="text-red-400 normal-case font-normal tracking-normal">*</span>
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: Piso 1, Subsolo, Térreo..."
-                className={INPUT}
-              />
-            </div>
-            <div>
-              <label className={LABEL}>Descrição</label>
-              <input
-                type="text"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Ex: Piso próximo à entrada..."
-                className={INPUT}
-              />
-            </div>
+          <div>
+            <label className={LABEL}>
+              Nome do Piso{' '}
+              <span className="text-red-400 normal-case font-normal tracking-normal">*</span>
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ex: Piso 1, Subsolo, Térreo..."
+              className={INPUT}
+            />
           </div>
 
           <div className="mt-4">
@@ -384,11 +370,11 @@ export default function FloorConfigPage() {
       </div>
 
       {/* Save button — fixed bottom right */}
-      <div className="fixed bottom-0 right-0 p-4 z-40">
+      <div className="sticky bottom-0 z-40 bg-gray-50/95 px-4 py-3 backdrop-blur border-t border-gray-100">
         <button
           type="button"
           onClick={handleSave}
-          className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gray-900 text-white font-semibold text-sm shadow-xl hover:bg-gray-800 active:bg-gray-950 touch-manipulation"
+          className="mx-auto flex w-full max-w-4xl items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-blue-600 text-white font-semibold text-sm shadow-sm hover:bg-blue-700 active:bg-blue-800 touch-manipulation"
         >
           <svg
             className="w-4 h-4"
