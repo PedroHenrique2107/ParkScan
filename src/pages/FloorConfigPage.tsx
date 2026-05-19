@@ -2,12 +2,14 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getFloorById, createFloor, updateFloor, getSpotsByFloor } from '../services/floorService'
 import Header from '../components/Header'
-import { CarIcon, TrashIcon } from '../components/Icons'
+import { CarIcon, PlusIcon, TrashIcon } from '../components/Icons'
 
 const INPUT =
   'w-full px-4 py-3.5 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
 const LABEL = 'block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5'
 const SPOT_SIZE = 56
+const SPOT_GAP = 64
+const SNAP_TOLERANCE = 16
 
 interface LayoutSpot {
   id: string
@@ -32,6 +34,84 @@ function generateDefaultLayout(): LayoutSpot[] {
     }
   }
   return spots
+}
+
+function getUniqueCoordinates(values: number[]): number[] {
+  return [...values]
+    .sort((a, b) => a - b)
+    .reduce<number[]>((coords, value) => {
+      const existing = coords.find((coord) => Math.abs(coord - value) <= SNAP_TOLERANCE)
+      if (existing === undefined) coords.push(value)
+      return coords
+    }, [])
+}
+
+function getCommonGap(coords: number[]): number {
+  const gaps = coords
+    .slice(1)
+    .map((coord, index) => coord - coords[index])
+    .filter((gap) => gap > SNAP_TOLERANCE)
+
+  return gaps.length > 0 ? Math.min(...gaps) : SPOT_GAP
+}
+
+function isSpotNearPosition(spot: LayoutSpot, x: number, y: number): boolean {
+  return Math.abs(spot.x - x) <= SNAP_TOLERANCE && Math.abs(spot.y - y) <= SNAP_TOLERANCE
+}
+
+function getNextSpotPosition(spots: LayoutSpot[]): Pick<LayoutSpot, 'x' | 'y'> {
+  if (spots.length === 0) return { x: 0, y: 0 }
+
+  const columns = getUniqueCoordinates(spots.map((spot) => spot.x))
+  const rows = getUniqueCoordinates(spots.map((spot) => spot.y))
+
+  for (const row of rows) {
+    for (const column of columns) {
+      if (!spots.some((spot) => isSpotNearPosition(spot, column, row))) {
+        return { x: column, y: row }
+      }
+    }
+  }
+
+  return {
+    x: columns[0] ?? 0,
+    y: (rows[rows.length - 1] ?? 0) + getCommonGap(rows),
+  }
+}
+
+function getLogicalSpotNumber(
+  spots: LayoutSpot[],
+  position: Pick<LayoutSpot, 'x' | 'y'>,
+): string {
+  const spotsWithCandidate = [...spots, { id: 'candidate', number: '', ...position }]
+  const columns = getUniqueCoordinates(spotsWithCandidate.map((spot) => spot.x))
+  const rows = getUniqueCoordinates(spotsWithCandidate.map((spot) => spot.y))
+  const rowIndex = rows.findIndex((row) => Math.abs(row - position.y) <= SNAP_TOLERANCE)
+  const columnIndex = columns.findIndex((column) => Math.abs(column - position.x) <= SNAP_TOLERANCE)
+
+  if (rowIndex === -1 || columnIndex === -1) {
+    return String(spots.length + 1).padStart(2, '0')
+  }
+
+  if (columns.length <= 2) {
+    return String(rowIndex * columns.length + columnIndex + 1).padStart(2, '0')
+  }
+
+  const baseRows = rows.findIndex((row) =>
+    columns.some((column) => !spotsWithCandidate.some((spot) => isSpotNearPosition(spot, column, row))),
+  )
+  const completeBaseRows = baseRows === -1 ? rows.length : baseRows
+  const groupSize = Math.ceil(columns.length / 2)
+
+  if (rowIndex < completeBaseRows) {
+    const groupIndex = Math.floor(columnIndex / groupSize)
+    const indexInGroup = columnIndex % groupSize
+    return String(groupIndex * completeBaseRows * groupSize + rowIndex * groupSize + indexInGroup + 1).padStart(2, '0')
+  }
+
+  const baseTotal = completeBaseRows * columns.length
+  const extraRowIndex = rowIndex - completeBaseRows
+  return String(baseTotal + extraRowIndex * columns.length + columnIndex + 1).padStart(2, '0')
 }
 
 export default function FloorConfigPage() {
@@ -101,6 +181,21 @@ export default function FloorConfigPage() {
       startSpotY: spot.y,
     }
     setDraggingId(spot.id)
+  }
+
+  function handleAddSpot() {
+    setLayoutSpots((prev) => {
+      const position = getNextSpotPosition(prev)
+
+      return [
+        ...prev,
+        {
+          id: `new-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          number: getLogicalSpotNumber(prev, position),
+          ...position,
+        },
+      ]
+    })
   }
 
   const canvasDims = useMemo(
@@ -182,13 +277,24 @@ export default function FloorConfigPage() {
             Carregue o layout padrão e ajuste as posições das vagas conforme necessário.
           </p>
 
-          <button
-            type="button"
-            onClick={() => setLayoutSpots(generateDefaultLayout())}
-            className="mb-4 inline-flex items-center px-4 py-2 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
-          >
-            Carregar Layout Padrão
-          </button>
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleAddSpot}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation"
+            >
+              <PlusIcon className="w-4 h-4" />
+              Adicionar Vaga
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setLayoutSpots(generateDefaultLayout())}
+              className="inline-flex items-center px-4 py-2 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
+            >
+              Carregar Layout Padrão
+            </button>
+          </div>
 
           {/* Canvas */}
           <div
@@ -208,7 +314,7 @@ export default function FloorConfigPage() {
               {layoutSpots.length === 0 && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <p className="text-sm text-gray-300 text-center px-4">
-                    Nenhuma vaga adicionada. Clique em "Carregar Layout Padrão".
+                    Nenhuma vaga adicionada. Clique em "Adicionar Vaga" ou "Carregar Layout Padrão".
                   </p>
                 </div>
               )}
