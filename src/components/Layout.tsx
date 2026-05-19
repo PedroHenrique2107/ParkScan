@@ -1,6 +1,7 @@
 import { useRef, useState, type TouchEvent } from 'react'
 import { Outlet } from 'react-router-dom'
 import BottomNav from './BottomNav'
+import { requestAppRefresh } from '../lib/refresh'
 
 const REFRESH_PULL_DISTANCE = 90
 
@@ -24,7 +25,9 @@ export default function Layout() {
 
   function handleTouchEnd() {
     if (pullDistance >= REFRESH_PULL_DISTANCE) {
-      window.location.reload()
+      requestAppRefresh()
+      startYRef.current = null
+      setPullDistance(0)
       return
     }
 

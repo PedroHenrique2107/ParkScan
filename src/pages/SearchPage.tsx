@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import type { Floor, ParkingSpot, Vehicle } from '../types'
 import { searchVehicles } from '../services/vehicleService'
 import { getFloorById, getSpotsByFloor } from '../services/floorService'
+import { APP_REFRESH_EVENT } from '../lib/refresh'
 import Header from '../components/Header'
 import VehicleDetail from '../components/VehicleDetail'
 import VehicleForm from '../components/VehicleForm'
@@ -19,6 +20,17 @@ export default function SearchPage() {
     const vehicles = searchVehicles(query)
     setResults(vehicles)
   }, [query])
+
+  const refreshSearch = useCallback(() => {
+    setDetail(null)
+    setEditing(false)
+    setResults(searchVehicles(query))
+  }, [query])
+
+  useEffect(() => {
+    window.addEventListener(APP_REFRESH_EVENT, refreshSearch)
+    return () => window.removeEventListener(APP_REFRESH_EVENT, refreshSearch)
+  }, [refreshSearch])
 
   const openDetail = useCallback((vehicle: Vehicle) => {
     const floor = getFloorById(vehicle.floorId)

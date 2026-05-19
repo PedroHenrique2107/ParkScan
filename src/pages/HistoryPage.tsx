@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import type { VehicleHistory } from '../types'
 import { getTodayHistory, clearTodayHistory } from '../services/historyService'
 import { getFloors } from '../services/floorService'
+import { APP_REFRESH_EVENT } from '../lib/refresh'
 import Header from '../components/Header'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { TrashIcon, FilterIcon } from '../components/Icons'
@@ -31,6 +32,11 @@ export default function HistoryPage() {
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    window.addEventListener(APP_REFRESH_EVENT, load)
+    return () => window.removeEventListener(APP_REFRESH_EVENT, load)
+  }, [load])
 
   // Fallback: build floor list from floors service too
   useEffect(() => {

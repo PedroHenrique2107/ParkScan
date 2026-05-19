@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getFloors, getSpotsByFloor } from '../services/floorService'
 import { getActiveVehicles } from '../services/vehicleService'
 import { getTodayHistory } from '../services/historyService'
+import { APP_REFRESH_EVENT } from '../lib/refresh'
 import { SearchIcon, MapIcon, ClockIcon, CogIcon, CarIcon } from '../components/Icons'
 
 export default function HomePage() {
   const navigate = useNavigate()
   const [stats, setStats] = useState({ vehicles: 0, freeSpots: 0, movedToday: 0 })
 
-  useEffect(() => {
+  const load = useCallback(() => {
     const floors = getFloors()
     const activeVehicles = getActiveVehicles()
 
@@ -25,6 +26,13 @@ export default function HomePage() {
       movedToday: getTodayHistory().length,
     })
   }, [])
+
+  useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    window.addEventListener(APP_REFRESH_EVENT, load)
+    return () => window.removeEventListener(APP_REFRESH_EVENT, load)
+  }, [load])
 
   const buttons = [
     { label: 'Buscar Veículo', icon: SearchIcon, to: '/search', color: 'bg-blue-600 text-white' },

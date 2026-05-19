@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Floor } from '../types'
 import { getFloors, deleteFloor, getFloorStats } from '../services/floorService'
+import { APP_REFRESH_EVENT } from '../lib/refresh'
 import Header from '../components/Header'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { PlusIcon, PencilIcon, TrashIcon, ChevronRightIcon } from '../components/Icons'
@@ -14,6 +15,11 @@ export default function FloorsPage() {
   const load = useCallback(() => setFloors(getFloors()), [])
 
   useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    window.addEventListener(APP_REFRESH_EVENT, load)
+    return () => window.removeEventListener(APP_REFRESH_EVENT, load)
+  }, [load])
 
   function handleDelete() {
     if (!deleteTarget) return

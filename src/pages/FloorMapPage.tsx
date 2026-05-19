@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import type { Floor, ParkingSpot, Vehicle } from '../types'
 import { getFloorById, getSpotsByFloor } from '../services/floorService'
 import { clearParkedVehiclesByFloor, getVehicleById } from '../services/vehicleService'
+import { APP_REFRESH_EVENT } from '../lib/refresh'
 import * as repo from '../storage/localStorageRepository'
 import Header from '../components/Header'
 import SpotCard from '../components/SpotCard'
@@ -45,6 +46,11 @@ export default function FloorMapPage() {
   }, [floorId, navigate])
 
   useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    window.addEventListener(APP_REFRESH_EVENT, load)
+    return () => window.removeEventListener(APP_REFRESH_EVENT, load)
+  }, [load])
 
   function handleSpotClick(spot: ParkingSpot) {
     if (spot.vehicleId) {
