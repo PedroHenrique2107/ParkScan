@@ -2,12 +2,14 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { Floor, ParkingSpot, Vehicle } from '../types'
 import { getFloorById, getSpotsByFloor } from '../services/floorService'
-import { getVehicleById } from '../services/vehicleService'
+import { clearParkedVehiclesByFloor, getVehicleById } from '../services/vehicleService'
 import * as repo from '../storage/localStorageRepository'
 import Header from '../components/Header'
 import SpotCard from '../components/SpotCard'
 import VehicleForm from '../components/VehicleForm'
 import VehicleDetail from '../components/VehicleDetail'
+import ConfirmDialog from '../components/ConfirmDialog'
+import { TrashIcon } from '../components/Icons'
 
 type ModalState =
   | { type: 'none' }
@@ -23,6 +25,7 @@ export default function FloorMapPage() {
   const [spots, setSpots] = useState<ParkingSpot[]>([])
   const [vehicleMap, setVehicleMap] = useState<Record<string, Vehicle>>({})
   const [modal, setModal] = useState<ModalState>({ type: 'none' })
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
 
   const load = useCallback(() => {
     if (!floorId) return
@@ -57,6 +60,14 @@ export default function FloorMapPage() {
     load()
   }
 
+  function handleClearFloorVehicles() {
+    if (!floorId) return
+    clearParkedVehiclesByFloor(floorId)
+    setShowClearConfirm(false)
+    setModal({ type: 'none' })
+    load()
+  }
+
   const hasLayout = spots.length > 0 && spots.every((s) => s.x !== undefined)
   const canvasDims = useMemo(
     () => ({
@@ -78,6 +89,17 @@ export default function FloorMapPage() {
         subtitle={`${occupied} ocupada${occupied !== 1 ? 's' : ''} · ${free} livre${free !== 1 ? 's' : ''}`}
         showBack
         backTo="/floors"
+        right={
+          occupied > 0 ? (
+            <button
+              onClick={() => setShowClearConfirm(true)}
+              className="flex items-center gap-1 text-red-500 px-3 py-2 rounded-xl text-sm font-semibold active:bg-red-50 touch-manipulation"
+            >
+              <TrashIcon className="w-4 h-4" />
+              Limpar
+            </button>
+          ) : null
+        }
       />
 
       {/* Legend */}
@@ -167,6 +189,17 @@ export default function FloorMapPage() {
           vehicle={modal.vehicle}
           onSave={handleRefresh}
           onClose={() => setModal({ type: 'none' })}
+        />
+      )}
+
+      {showClearConfirm && (
+        <ConfirmDialog
+          message={`Limpar placas de "${floor.name}"?`}
+          detail="Todas as placas cadastradas neste setor serão removidas, mas as vagas serão mantidas."
+          confirmLabel="Limpar placas"
+          danger
+          onConfirm={handleClearFloorVehicles}
+          onCancel={() => setShowClearConfirm(false)}
         />
       )}
     </div>

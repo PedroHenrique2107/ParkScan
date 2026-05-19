@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import HomePage from './pages/HomePage'
@@ -6,8 +7,21 @@ import FloorConfigPage from './pages/FloorConfigPage'
 import FloorMapPage from './pages/FloorMapPage'
 import SearchPage from './pages/SearchPage'
 import HistoryPage from './pages/HistoryPage'
+import { runDailyMaintenance } from './services/dailyMaintenance'
 
 export default function App() {
+  useEffect(() => {
+    runDailyMaintenance()
+
+    const interval = window.setInterval(runDailyMaintenance, 60_000)
+    document.addEventListener('visibilitychange', runDailyMaintenance)
+
+    return () => {
+      window.clearInterval(interval)
+      document.removeEventListener('visibilitychange', runDailyMaintenance)
+    }
+  }, [])
+
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
