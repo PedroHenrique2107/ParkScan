@@ -1,6 +1,7 @@
 export interface Floor {
   id: string
   name: string
+  description?: string
   totalSpots: number
   columns: number
   createdAt: string
@@ -12,6 +13,8 @@ export interface ParkingSpot {
   floorId: string
   number: string
   vehicleId?: string
+  x?: number
+  y?: number
 }
 
 export interface Vehicle {

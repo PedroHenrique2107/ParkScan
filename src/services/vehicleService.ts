@@ -111,6 +111,50 @@ export function removeVehicle(vehicleId: string): void {
   repo.saveVehicles(vehicles.filter((v) => v.id !== vehicleId))
 }
 
+export function clearParkedVehiclesByFloor(floorId: string): void {
+  const vehicles = repo.getVehicles()
+  const removedIds = new Set(
+    vehicles
+      .filter((vehicle) => vehicle.floorId === floorId && vehicle.status === 'PARKED')
+      .map((vehicle) => vehicle.id),
+  )
+
+  if (removedIds.size === 0) return
+
+  repo.saveVehicles(vehicles.filter((vehicle) => !removedIds.has(vehicle.id)))
+  repo.saveSpots(
+    repo.getSpots().map((spot) => {
+      if (spot.floorId !== floorId || !spot.vehicleId || !removedIds.has(spot.vehicleId)) {
+        return spot
+      }
+
+      const { vehicleId: _vehicleId, ...freeSpot } = spot
+      return freeSpot
+    }),
+  )
+}
+
+export function clearAllParkedVehicles(): void {
+  const vehicles = repo.getVehicles()
+  const removedIds = new Set(
+    vehicles
+      .filter((vehicle) => vehicle.status === 'PARKED')
+      .map((vehicle) => vehicle.id),
+  )
+
+  if (removedIds.size === 0) return
+
+  repo.saveVehicles(vehicles.filter((vehicle) => !removedIds.has(vehicle.id)))
+  repo.saveSpots(
+    repo.getSpots().map((spot) => {
+      if (!spot.vehicleId || !removedIds.has(spot.vehicleId)) return spot
+
+      const { vehicleId: _vehicleId, ...freeSpot } = spot
+      return freeSpot
+    }),
+  )
+}
+
 export function searchVehicles(query: string): Vehicle[] {
   const q = query.toLowerCase().trim()
   const cleanQ = cleanPlate(query).toLowerCase()

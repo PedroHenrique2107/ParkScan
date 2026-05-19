@@ -5,6 +5,7 @@ const KEYS = {
   SPOTS: 'cp:spots',
   VEHICLES: 'cp:vehicles',
   HISTORY: 'cp:history',
+  LAST_DAILY_CLEANUP: 'cp:lastDailyCleanup',
 } as const
 
 function safeGet<T>(key: string, fallback: T): T {
@@ -66,4 +67,12 @@ export function clearDayHistory(): void {
     (h) => new Date(h.movedDownAt).toDateString() !== today,
   )
   saveHistory(history)
+}
+
+export function getLastDailyCleanup(): string | null {
+  return localStorage.getItem(KEYS.LAST_DAILY_CLEANUP)
+}
+
+export function saveLastDailyCleanup(dateKey: string): void {
+  localStorage.setItem(KEYS.LAST_DAILY_CLEANUP, dateKey)
 }
