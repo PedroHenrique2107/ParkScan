@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import HomePage from './pages/HomePage'
+import AllFloorsMapPage from './pages/AllFloorsMapPage'
 import FloorsPage from './pages/FloorsPage'
 import FloorConfigPage from './pages/FloorConfigPage'
 import FloorMapPage from './pages/FloorMapPage'
@@ -26,6 +27,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Layout />}>
         <Route index element={<HomePage />} />
+        <Route path="floor-map" element={<AllFloorsMapPage />} />
         <Route path="floors" element={<FloorsPage />} />
         <Route path="floors/new" element={<FloorConfigPage />} />
         <Route path="floors/edit/:floorId" element={<FloorConfigPage />} />

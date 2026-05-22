@@ -33,7 +33,7 @@ export default function HomePage() {
 
   const buttons = [
     { label: 'Buscar Veículo', icon: SearchIcon, to: '/search', color: 'bg-blue-600 text-white' },
-    { label: 'Mapa de Pisos', icon: MapIcon, to: '/floors', color: 'bg-indigo-600 text-white' },
+    { label: 'Mapa de Pisos', icon: MapIcon, to: '/floor-map', color: 'bg-indigo-600 text-white' },
     { label: 'Histórico do Dia', icon: ClockIcon, to: '/history', color: 'bg-violet-600 text-white' },
     { label: 'Configurar Pisos', icon: CogIcon, to: '/floors', color: 'bg-gray-700 text-white' },
   ]
