@@ -8,7 +8,7 @@ const INPUT =
   'w-full px-4 py-3.5 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
 const LABEL = 'block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5'
 const SPOT_SIZE = 56
-const SPOT_GAP = 64
+const SPOT_GAP = 72
 const SNAP_TOLERANCE = 16
 
 interface LayoutSpot {
@@ -23,17 +23,66 @@ function generateDefaultLayout(): LayoutSpot[] {
   let n = 1
   for (let row = 0; row < 5; row++) {
     for (let col = 0; col < 2; col++) {
-      spots.push({ id: `new-${n}`, number: String(n).padStart(2, '0'), x: col * 64, y: row * 64 })
+      spots.push({ id: `new-${n}`, number: String(n).padStart(2, '0'), x: col * SPOT_GAP, y: row * SPOT_GAP })
       n++
     }
   }
   for (let row = 0; row < 5; row++) {
     for (let col = 0; col < 2; col++) {
-      spots.push({ id: `new-${n}`, number: String(n).padStart(2, '0'), x: 192 + col * 64, y: row * 64 })
+      spots.push({ id: `new-${n}`, number: String(n).padStart(2, '0'), x: SPOT_GAP * 3 + col * SPOT_GAP, y: row * SPOT_GAP })
       n++
     }
   }
   return spots
+}
+
+function snapToGrid(value: number): number {
+  return Math.max(0, Math.round(value / SPOT_GAP) * SPOT_GAP)
+}
+
+function snapPosition(position: Pick<LayoutSpot, 'x' | 'y'>): Pick<LayoutSpot, 'x' | 'y'> {
+  return {
+    x: snapToGrid(position.x),
+    y: snapToGrid(position.y),
+  }
+}
+
+function positionKey(position: Pick<LayoutSpot, 'x' | 'y'>): string {
+  return `${position.x}:${position.y}`
+}
+
+function findNextFreeGridPosition(
+  usedPositions: Set<string>,
+  startPosition: Pick<LayoutSpot, 'x' | 'y'>,
+): Pick<LayoutSpot, 'x' | 'y'> {
+  let row = Math.floor(startPosition.y / SPOT_GAP)
+  let col = Math.floor(startPosition.x / SPOT_GAP)
+
+  while (usedPositions.has(positionKey({ x: col * SPOT_GAP, y: row * SPOT_GAP }))) {
+    col++
+    if (col >= 6) {
+      col = 0
+      row++
+    }
+  }
+
+  return { x: col * SPOT_GAP, y: row * SPOT_GAP }
+}
+
+function organizeLayoutSpots(spots: LayoutSpot[]): LayoutSpot[] {
+  const usedPositions = new Set<string>()
+
+  return [...spots]
+    .sort((a, b) => a.y - b.y || a.x - b.x)
+    .map((spot) => {
+      const snappedPosition = snapPosition(spot)
+      const position = usedPositions.has(positionKey(snappedPosition))
+        ? findNextFreeGridPosition(usedPositions, snappedPosition)
+        : snappedPosition
+
+      usedPositions.add(positionKey(position))
+      return { ...spot, ...position }
+    })
 }
 
 function getUniqueCoordinates(values: number[]): number[] {
@@ -134,12 +183,12 @@ export default function FloorConfigPage() {
         setName(floor.name)
         const spots = getSpotsByFloor(floorId)
         setLayoutSpots(
-          spots.map((s, i) => ({
+          organizeLayoutSpots(spots.map((s, i) => ({
             id: s.id,
             number: s.number,
-            x: s.x ?? (i % 4) * 64,
-            y: s.y ?? Math.floor(i / 4) * 64,
-          })),
+            x: s.x ?? (i % 4) * SPOT_GAP,
+            y: s.y ?? Math.floor(i / 4) * SPOT_GAP,
+          }))),
         )
       }
     }
@@ -151,14 +200,17 @@ export default function FloorConfigPage() {
     function onMove(e: PointerEvent) {
       const dx = e.clientX - dragOffsetRef.current.startMouseX
       const dy = e.clientY - dragOffsetRef.current.startMouseY
-      const newX = Math.max(0, dragOffsetRef.current.startSpotX + dx)
-      const newY = Math.max(0, dragOffsetRef.current.startSpotY + dy)
+      const position = snapPosition({
+        x: dragOffsetRef.current.startSpotX + dx,
+        y: dragOffsetRef.current.startSpotY + dy,
+      })
       setLayoutSpots((prev) =>
-        prev.map((s) => (s.id === draggingId ? { ...s, x: newX, y: newY } : s)),
+        prev.map((s) => (s.id === draggingId ? { ...s, ...position } : s)),
       )
     }
 
     function onUp() {
+      setLayoutSpots((prev) => organizeLayoutSpots(prev))
       setDraggingId(null)
     }
 
@@ -210,10 +262,11 @@ export default function FloorConfigPage() {
       setError('O nome do piso é obrigatório.')
       return
     }
+    const organizedSpots = organizeLayoutSpots(layoutSpots)
     if (isEdit && floorId) {
-      updateFloor(floorId, name.trim(), '', layoutSpots)
+      updateFloor(floorId, name.trim(), '', organizedSpots)
     } else {
-      createFloor(name.trim(), '', layoutSpots)
+      createFloor(name.trim(), '', organizedSpots)
     }
     navigate('/floors')
   }
@@ -279,6 +332,13 @@ export default function FloorConfigPage() {
               className="inline-flex items-center px-4 py-2 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
             >
               Carregar Layout Padrão
+            </button>
+            <button
+              type="button"
+              onClick={() => setLayoutSpots((prev) => organizeLayoutSpots(prev))}
+              className="inline-flex items-center px-4 py-2 rounded-xl border border-blue-100 bg-blue-50 text-blue-700 text-sm font-semibold hover:bg-blue-100 active:bg-blue-100 transition-colors touch-manipulation"
+            >
+              Organizar Automaticamente
             </button>
           </div>
 
