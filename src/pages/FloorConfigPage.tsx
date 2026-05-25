@@ -10,6 +10,7 @@ const LABEL = 'block text-xs font-semibold text-gray-500 uppercase tracking-wide
 const SPOT_SIZE = 80
 const SPOT_GAP = 84
 const SNAP_TOLERANCE = 16
+const LAYOUT_ZOOM = 0.82
 
 interface LayoutSpot {
   id: string
@@ -229,8 +230,8 @@ export default function FloorConfigPage() {
         dragOffsetRef.current.moved = true
       }
       const position = snapPosition({
-        x: dragOffsetRef.current.startSpotX + dx,
-        y: dragOffsetRef.current.startSpotY + dy,
+        x: dragOffsetRef.current.startSpotX + dx / LAYOUT_ZOOM,
+        y: dragOffsetRef.current.startSpotY + dy / LAYOUT_ZOOM,
       })
       setLayoutSpots((prev) =>
         prev.map((s) => (s.id === draggingId ? { ...s, ...position } : s)),
@@ -283,8 +284,8 @@ export default function FloorConfigPage() {
 
   const canvasDims = useMemo(
     () => ({
-      width: Math.max(400, layoutSpots.reduce((m, s) => Math.max(m, s.x + SPOT_SIZE + 24), 0)),
-      height: Math.max(380, layoutSpots.reduce((m, s) => Math.max(m, s.y + SPOT_SIZE + 24), 0)),
+      width: Math.max(320, layoutSpots.reduce((m, s) => Math.max(m, (s.x + SPOT_SIZE) * LAYOUT_ZOOM + 24), 0)),
+      height: Math.max(320, layoutSpots.reduce((m, s) => Math.max(m, (s.y + SPOT_SIZE) * LAYOUT_ZOOM + 24), 0)),
     }),
     [layoutSpots],
   )
@@ -378,7 +379,7 @@ export default function FloorConfigPage() {
           {/* Canvas */}
           <div
             className="overflow-auto rounded-xl border-2 border-dashed border-gray-200"
-            style={{ minHeight: 380 }}
+            style={{ minHeight: 320 }}
           >
             <div
               ref={canvasRef}
@@ -387,7 +388,7 @@ export default function FloorConfigPage() {
                 width: canvasDims.width,
                 height: canvasDims.height,
                 minWidth: '100%',
-                minHeight: 380,
+                minHeight: 320,
               }}
             >
               {layoutSpots.length === 0 && (
@@ -408,10 +409,12 @@ export default function FloorConfigPage() {
                         : 'border-blue-200 bg-white hover:border-blue-400 hover:shadow-md z-10 cursor-grab'
                     }`}
                   style={{
-                    left: spot.x,
-                    top: spot.y,
+                    left: spot.x * LAYOUT_ZOOM,
+                    top: spot.y * LAYOUT_ZOOM,
                     width: SPOT_SIZE,
                     height: SPOT_SIZE,
+                    transform: `scale(${LAYOUT_ZOOM})`,
+                    transformOrigin: 'top left',
                     touchAction: 'none',
                   }}
                   onPointerDown={(e) => startDrag(e, spot)}

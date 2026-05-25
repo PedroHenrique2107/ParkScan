@@ -12,6 +12,7 @@ import { CogIcon, PlusIcon } from '../components/Icons'
 
 const SPOT_CARD_SIZE = 80
 const SPOT_DISPLAY_GAP = 84
+const MAP_ZOOM = 0.82
 
 function getLayoutScale(spots: ParkingSpot[]): number {
   const getGaps = (coordinates: number[]) => {
@@ -174,8 +175,8 @@ function FloorMapSection({
   const layoutScale = getLayoutScale(spots)
   const canvasDims = useMemo(
     () => ({
-      width: Math.max(320, spots.reduce((max, spot) => Math.max(max, (spot.x ?? 0) * layoutScale + SPOT_CARD_SIZE + 16), 0)),
-      height: Math.max(112, spots.reduce((max, spot) => Math.max(max, (spot.y ?? 0) * layoutScale + SPOT_CARD_SIZE + 16), 0)),
+      width: Math.max(320, spots.reduce((max, spot) => Math.max(max, ((spot.x ?? 0) * layoutScale + SPOT_CARD_SIZE) * MAP_ZOOM + 16), 0)),
+      height: Math.max(112, spots.reduce((max, spot) => Math.max(max, ((spot.y ?? 0) * layoutScale + SPOT_CARD_SIZE) * MAP_ZOOM + 16), 0)),
     }),
     [layoutScale, spots],
   )
@@ -208,7 +209,14 @@ function FloorMapSection({
                 <div
                   key={spot.id}
                   className="absolute"
-                  style={{ left: (spot.x ?? 0) * layoutScale, top: (spot.y ?? 0) * layoutScale, width: SPOT_CARD_SIZE, height: SPOT_CARD_SIZE }}
+                  style={{
+                    left: (spot.x ?? 0) * layoutScale * MAP_ZOOM,
+                    top: (spot.y ?? 0) * layoutScale * MAP_ZOOM,
+                    width: SPOT_CARD_SIZE,
+                    height: SPOT_CARD_SIZE,
+                    transform: `scale(${MAP_ZOOM})`,
+                    transformOrigin: 'top left',
+                  }}
                 >
                   <SpotCard spot={spot} vehicle={vehicle} onClick={() => onSpotClick(floor, spot)} />
                 </div>
