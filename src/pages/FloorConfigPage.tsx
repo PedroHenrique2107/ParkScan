@@ -198,7 +198,7 @@ export default function FloorConfigPage() {
   const [error, setError] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [draggingId, setDraggingId] = useState<string | null>(null)
-  const dragOffsetRef = useRef({ startMouseX: 0, startMouseY: 0, startSpotX: 0, startSpotY: 0 })
+  const dragOffsetRef = useRef({ startMouseX: 0, startMouseY: 0, startSpotX: 0, startSpotY: 0, moved: false })
   const canvasRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -225,6 +225,9 @@ export default function FloorConfigPage() {
     function onMove(e: PointerEvent) {
       const dx = e.clientX - dragOffsetRef.current.startMouseX
       const dy = e.clientY - dragOffsetRef.current.startMouseY
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+        dragOffsetRef.current.moved = true
+      }
       const position = snapPosition({
         x: dragOffsetRef.current.startSpotX + dx,
         y: dragOffsetRef.current.startSpotY + dy,
@@ -235,6 +238,9 @@ export default function FloorConfigPage() {
     }
 
     function onUp() {
+      if (!dragOffsetRef.current.moved) {
+        setSelectedId((selected) => selected === draggingId ? null : draggingId)
+      }
       setLayoutSpots((prev) => organizeLayoutSpots(prev))
       setDraggingId(null)
     }
@@ -249,12 +255,12 @@ export default function FloorConfigPage() {
 
   function startDrag(e: React.PointerEvent, spot: LayoutSpot) {
     e.preventDefault()
-    setSelectedId(spot.id)
     dragOffsetRef.current = {
       startMouseX: e.clientX,
       startMouseY: e.clientY,
       startSpotX: spot.x,
       startSpotY: spot.y,
+      moved: false,
     }
     setDraggingId(spot.id)
   }
@@ -442,8 +448,8 @@ export default function FloorConfigPage() {
           <p className="text-xs text-amber-600 mt-2 flex items-start gap-1">
             <span className="shrink-0">💡</span>
             <span>
-              Dica: Arraste as vagas para ajustar suas posições. Toque em uma vaga e
-              clique no X para removê-la.
+              Dica: Arraste as vagas para ajustar suas posições. Toque em uma vaga para
+              exibir o X e removê-la.
             </span>
           </p>
         </div>
