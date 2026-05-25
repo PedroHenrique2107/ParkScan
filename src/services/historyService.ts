@@ -1,6 +1,5 @@
 import type { VehicleHistory } from '../types'
 import * as repo from '../storage/localStorageRepository'
-import { clearTodayVehicles } from './vehicleService'
 
 export function getTodayHistory(): VehicleHistory[] {
   const today = new Date().toDateString()
@@ -13,5 +12,4 @@ export function getAllHistory(): VehicleHistory[] {
 
 export function clearTodayHistory(): void {
   repo.clearDayHistory()
-  clearTodayVehicles()
 }
