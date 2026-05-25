@@ -10,6 +10,8 @@ import VehicleForm from '../components/VehicleForm'
 import VehicleDetail from '../components/VehicleDetail'
 import { CogIcon, PlusIcon } from '../components/Icons'
 
+const SPOT_CARD_SIZE = 64
+
 type FloorSection = {
   floor: Floor
   spots: ParkingSpot[]
@@ -156,8 +158,8 @@ function FloorMapSection({
   const hasLayout = spots.length > 0 && spots.every((spot) => spot.x !== undefined)
   const canvasDims = useMemo(
     () => ({
-      width: Math.max(320, spots.reduce((max, spot) => Math.max(max, (spot.x ?? 0) + 72), 0)),
-      height: Math.max(112, spots.reduce((max, spot) => Math.max(max, (spot.y ?? 0) + 72), 0)),
+      width: Math.max(320, spots.reduce((max, spot) => Math.max(max, (spot.x ?? 0) + SPOT_CARD_SIZE + 16), 0)),
+      height: Math.max(112, spots.reduce((max, spot) => Math.max(max, (spot.y ?? 0) + SPOT_CARD_SIZE + 16), 0)),
     }),
     [spots],
   )
@@ -190,7 +192,7 @@ function FloorMapSection({
                 <div
                   key={spot.id}
                   className="absolute"
-                  style={{ left: spot.x, top: spot.y, width: 56, height: 56 }}
+                  style={{ left: spot.x, top: spot.y, width: SPOT_CARD_SIZE, height: SPOT_CARD_SIZE }}
                 >
                   <SpotCard spot={spot} vehicle={vehicle} onClick={() => onSpotClick(floor, spot)} />
                 </div>

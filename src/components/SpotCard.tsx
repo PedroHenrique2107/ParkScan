@@ -13,7 +13,7 @@ export default function SpotCard({ spot, vehicle, onClick }: SpotCardProps) {
     <button
       onClick={onClick}
       className={`
-        w-full aspect-square relative rounded-xl border-2 flex flex-col items-center justify-center
+        w-full h-full min-h-16 relative rounded-xl border-2 flex flex-col items-center justify-center
         p-1 text-center transition-all active:scale-95 touch-manipulation select-none
         ${
           occupied
@@ -27,10 +27,10 @@ export default function SpotCard({ spot, vehicle, onClick }: SpotCardProps) {
       </span>
       {occupied ? (
         <>
-          <span className="text-[11px] font-bold leading-tight mt-1 px-0.5 break-all">
+          <span className="w-full truncate whitespace-nowrap px-0.5 mt-1 text-[10px] font-bold leading-tight">
             {vehicle!.plate}
           </span>
-          <span className="text-[9px] text-blue-200 leading-tight mt-0.5 truncate w-full px-1 text-center">
+          <span className="w-full truncate whitespace-nowrap px-1 mt-0.5 text-[9px] text-blue-200 leading-tight text-center">
             {vehicle!.model.split(' ')[0]}
           </span>
         </>

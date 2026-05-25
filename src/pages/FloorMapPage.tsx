@@ -11,6 +11,8 @@ import VehicleDetail from '../components/VehicleDetail'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { TrashIcon } from '../components/Icons'
 
+const SPOT_CARD_SIZE = 64
+
 type ModalState =
   | { type: 'none' }
   | { type: 'register'; spot: ParkingSpot }
@@ -71,8 +73,8 @@ export default function FloorMapPage() {
   const hasLayout = spots.length > 0 && spots.every((s) => s.x !== undefined)
   const canvasDims = useMemo(
     () => ({
-      width: Math.max(320, spots.reduce((m, s) => Math.max(m, (s.x ?? 0) + 56 + 16), 0)),
-      height: Math.max(320, spots.reduce((m, s) => Math.max(m, (s.y ?? 0) + 56 + 16), 0)),
+      width: Math.max(320, spots.reduce((m, s) => Math.max(m, (s.x ?? 0) + SPOT_CARD_SIZE + 16), 0)),
+      height: Math.max(320, spots.reduce((m, s) => Math.max(m, (s.y ?? 0) + SPOT_CARD_SIZE + 16), 0)),
     }),
     [spots],
   )
@@ -130,7 +132,7 @@ export default function FloorMapPage() {
                   <div
                     key={spot.id}
                     className="absolute"
-                    style={{ left: spot.x, top: spot.y, width: 56, height: 56 }}
+                    style={{ left: spot.x, top: spot.y, width: SPOT_CARD_SIZE, height: SPOT_CARD_SIZE }}
                   >
                     <SpotCard
                       spot={spot}

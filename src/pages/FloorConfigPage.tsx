@@ -171,7 +171,7 @@ export default function FloorConfigPage() {
   const [name, setName] = useState('')
   const [layoutSpots, setLayoutSpots] = useState<LayoutSpot[]>([])
   const [error, setError] = useState('')
-  const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const dragOffsetRef = useRef({ startMouseX: 0, startMouseY: 0, startSpotX: 0, startSpotY: 0 })
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -224,6 +224,7 @@ export default function FloorConfigPage() {
 
   function startDrag(e: React.PointerEvent, spot: LayoutSpot) {
     e.preventDefault()
+    setSelectedId(spot.id)
     dragOffsetRef.current = {
       startMouseX: e.clientX,
       startMouseY: e.clientY,
@@ -382,21 +383,20 @@ export default function FloorConfigPage() {
                     touchAction: 'none',
                   }}
                   onPointerDown={(e) => startDrag(e, spot)}
-                  onMouseEnter={() => setHoveredId(spot.id)}
-                  onMouseLeave={() => setHoveredId(null)}
                 >
                   <CarIcon className="w-5 h-5 text-blue-500 pointer-events-none" />
                   <span className="text-[10px] font-bold text-blue-600 mt-0.5 pointer-events-none">
                     {spot.number}
                   </span>
 
-                  {hoveredId === spot.id && draggingId !== spot.id && (
+                  {selectedId === spot.id && draggingId !== spot.id && (
                     <button
                       type="button"
                       onPointerDown={(e) => e.stopPropagation()}
-                      onClick={() =>
+                      onClick={() => {
                         setLayoutSpots((prev) => prev.filter((s) => s.id !== spot.id))
-                      }
+                        setSelectedId(null)
+                      }}
                       className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 z-30 text-xs leading-none"
                     >
                       ×
@@ -416,7 +416,7 @@ export default function FloorConfigPage() {
           <p className="text-xs text-amber-600 mt-2 flex items-start gap-1">
             <span className="shrink-0">💡</span>
             <span>
-              Dica: Arraste as vagas para ajustar suas posições. Passe o mouse sobre uma vaga e
+              Dica: Arraste as vagas para ajustar suas posições. Toque em uma vaga e
               clique no X para removê-la.
             </span>
           </p>
