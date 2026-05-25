@@ -11,7 +11,22 @@ import VehicleDetail from '../components/VehicleDetail'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { TrashIcon } from '../components/Icons'
 
-const SPOT_CARD_SIZE = 64
+const SPOT_CARD_SIZE = 80
+const SPOT_DISPLAY_GAP = 84
+
+function getLayoutScale(spots: ParkingSpot[]): number {
+  const getGaps = (coordinates: number[]) => {
+    const uniqueCoordinates = [...new Set(coordinates)].sort((a, b) => a - b)
+    return uniqueCoordinates.slice(1).map((value, index) => value - uniqueCoordinates[index])
+  }
+  const gaps = [
+    ...getGaps(spots.flatMap((spot) => spot.x === undefined ? [] : [spot.x])),
+    ...getGaps(spots.flatMap((spot) => spot.y === undefined ? [] : [spot.y])),
+  ].filter((gap) => gap > 0)
+  const minimumGap = gaps.length > 0 ? Math.min(...gaps) : SPOT_DISPLAY_GAP
+
+  return minimumGap < SPOT_DISPLAY_GAP ? SPOT_DISPLAY_GAP / minimumGap : 1
+}
 
 type ModalState =
   | { type: 'none' }
@@ -71,12 +86,13 @@ export default function FloorMapPage() {
   }
 
   const hasLayout = spots.length > 0 && spots.every((s) => s.x !== undefined)
+  const layoutScale = getLayoutScale(spots)
   const canvasDims = useMemo(
     () => ({
-      width: Math.max(320, spots.reduce((m, s) => Math.max(m, (s.x ?? 0) + SPOT_CARD_SIZE + 16), 0)),
-      height: Math.max(320, spots.reduce((m, s) => Math.max(m, (s.y ?? 0) + SPOT_CARD_SIZE + 16), 0)),
+      width: Math.max(320, spots.reduce((m, s) => Math.max(m, (s.x ?? 0) * layoutScale + SPOT_CARD_SIZE + 16), 0)),
+      height: Math.max(320, spots.reduce((m, s) => Math.max(m, (s.y ?? 0) * layoutScale + SPOT_CARD_SIZE + 16), 0)),
     }),
-    [spots],
+    [layoutScale, spots],
   )
 
   if (!floor) return null
@@ -132,7 +148,7 @@ export default function FloorMapPage() {
                   <div
                     key={spot.id}
                     className="absolute"
-                    style={{ left: spot.x, top: spot.y, width: SPOT_CARD_SIZE, height: SPOT_CARD_SIZE }}
+                    style={{ left: (spot.x ?? 0) * layoutScale, top: (spot.y ?? 0) * layoutScale, width: SPOT_CARD_SIZE, height: SPOT_CARD_SIZE }}
                   >
                     <SpotCard
                       spot={spot}

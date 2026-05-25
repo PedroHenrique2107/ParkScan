@@ -7,8 +7,8 @@ import { CarIcon, PlusIcon, TrashIcon } from '../components/Icons'
 const INPUT =
   'w-full px-4 py-3.5 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
 const LABEL = 'block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5'
-const SPOT_SIZE = 56
-const SPOT_GAP = 72
+const SPOT_SIZE = 80
+const SPOT_GAP = 84
 const SNAP_TOLERANCE = 16
 
 interface LayoutSpot {

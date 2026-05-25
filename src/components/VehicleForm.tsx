@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Floor, ParkingSpot, Vehicle } from '../types'
-import { registerVehicle, updateVehicle } from '../services/vehicleService'
+import { isPlateCurrentlyParked, registerVehicle, updateVehicle } from '../services/vehicleService'
 import { formatPlate, isValidPlate } from '../lib/plate'
 import { CAR_MODELS } from '../data/carModels'
 import Autocomplete from './Autocomplete'
@@ -33,13 +33,21 @@ export default function VehicleForm({ floor, spot, vehicle, onSave, onClose }: V
     if (!plate.trim()) { setError('Placa é obrigatória'); return }
     if (!isValidPlate(plate)) { setError('Informe uma placa no formato ABC-1234 ou ABC1D23'); return }
     if (!model.trim()) { setError('Modelo é obrigatório'); return }
-
-    if (vehicle) {
-      updateVehicle(vehicle.id, plate, model, observation)
-    } else {
-      registerVehicle(plate, model, floor.id, spot.id, observation)
+    if (isPlateCurrentlyParked(plate, vehicle?.id)) {
+      setError('Esta placa já está registrada no pátio.')
+      return
     }
-    onSave()
+
+    try {
+      if (vehicle) {
+        updateVehicle(vehicle.id, plate, model, observation)
+      } else {
+        registerVehicle(plate, model, floor.id, spot.id, observation)
+      }
+      onSave()
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Não foi possível salvar o veículo.')
+    }
   }
 
   return (
