@@ -163,6 +163,31 @@ function getLogicalSpotNumber(
   return String(baseTotal + extraRowIndex * columns.length + columnIndex + 1).padStart(2, '0')
 }
 
+function getAvailableSpotNumber(spots: LayoutSpot[], preferredNumber: string): string {
+  const usedNumbers = new Set(spots.map((spot) => spot.number))
+  if (!usedNumbers.has(preferredNumber)) return preferredNumber
+
+  let nextNumber = 1
+  while (usedNumbers.has(String(nextNumber).padStart(2, '0'))) {
+    nextNumber++
+  }
+
+  return String(nextNumber).padStart(2, '0')
+}
+
+function ensureUniqueSpotNumbers(spots: LayoutSpot[]): LayoutSpot[] {
+  const normalized: LayoutSpot[] = []
+
+  for (const spot of spots) {
+    normalized.push({
+      ...spot,
+      number: getAvailableSpotNumber(normalized, spot.number),
+    })
+  }
+
+  return normalized
+}
+
 export default function FloorConfigPage() {
   const navigate = useNavigate()
   const { floorId } = useParams<{ floorId: string }>()
@@ -183,12 +208,12 @@ export default function FloorConfigPage() {
         setName(floor.name)
         const spots = getSpotsByFloor(floorId)
         setLayoutSpots(
-          organizeLayoutSpots(spots.map((s, i) => ({
+          ensureUniqueSpotNumbers(organizeLayoutSpots(spots.map((s, i) => ({
             id: s.id,
             number: s.number,
             x: s.x ?? (i % 4) * SPOT_GAP,
             y: s.y ?? Math.floor(i / 4) * SPOT_GAP,
-          }))),
+          })))),
         )
       }
     }
@@ -237,12 +262,13 @@ export default function FloorConfigPage() {
   function handleAddSpot() {
     setLayoutSpots((prev) => {
       const position = getNextSpotPosition(prev)
+      const number = getAvailableSpotNumber(prev, getLogicalSpotNumber(prev, position))
 
       return [
         ...prev,
         {
           id: `new-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          number: getLogicalSpotNumber(prev, position),
+          number,
           ...position,
         },
       ]
@@ -263,7 +289,7 @@ export default function FloorConfigPage() {
       setError('O nome do piso é obrigatório.')
       return
     }
-    const organizedSpots = organizeLayoutSpots(layoutSpots)
+    const organizedSpots = ensureUniqueSpotNumbers(organizeLayoutSpots(layoutSpots))
     if (isEdit && floorId) {
       updateFloor(floorId, name.trim(), '', organizedSpots)
     } else {

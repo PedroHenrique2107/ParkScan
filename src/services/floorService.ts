@@ -5,6 +5,26 @@ function genId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`
 }
 
+function ensureUniqueSpotNumbers<T extends { number: string }>(spots: T[]): T[] {
+  const usedNumbers = new Set<string>()
+
+  return spots.map((spot) => {
+    if (!usedNumbers.has(spot.number)) {
+      usedNumbers.add(spot.number)
+      return spot
+    }
+
+    let nextNumber = 1
+    while (usedNumbers.has(String(nextNumber).padStart(2, '0'))) {
+      nextNumber++
+    }
+
+    const number = String(nextNumber).padStart(2, '0')
+    usedNumbers.add(number)
+    return { ...spot, number }
+  })
+}
+
 export function getFloors(): Floor[] {
   return repo.getFloors()
 }
@@ -18,12 +38,13 @@ export function createFloor(
   description: string,
   spots: Array<{ number: string; x: number; y: number }>,
 ): Floor {
+  const uniqueSpots = ensureUniqueSpotNumbers(spots)
   const now = new Date().toISOString()
   const floor: Floor = {
     id: genId(),
     name,
     description,
-    totalSpots: spots.length,
+    totalSpots: uniqueSpots.length,
     columns: 4,
     createdAt: now,
     updatedAt: now,
@@ -34,7 +55,7 @@ export function createFloor(
   repo.saveFloors(floors)
 
   const allSpots = repo.getSpots()
-  for (const s of spots) {
+  for (const s of uniqueSpots) {
     allSpots.push({ id: genId(), floorId: floor.id, number: s.number, x: s.x, y: s.y })
   }
   repo.saveSpots(allSpots)
@@ -48,6 +69,7 @@ export function updateFloor(
   description: string,
   layoutSpots: Array<{ id?: string; number: string; x: number; y: number }>,
 ): void {
+  const uniqueLayoutSpots = ensureUniqueSpotNumbers(layoutSpots)
   const floors = repo.getFloors()
   const idx = floors.findIndex((f) => f.id === id)
   if (idx === -1) return
@@ -56,7 +78,7 @@ export function updateFloor(
     ...floors[idx],
     name,
     description,
-    totalSpots: layoutSpots.length,
+    totalSpots: uniqueLayoutSpots.length,
     updatedAt: new Date().toISOString(),
   }
   repo.saveFloors(floors)
@@ -65,7 +87,7 @@ export function updateFloor(
   const otherSpots = allSpots.filter((s) => s.floorId !== id)
   const existingFloorSpots = allSpots.filter((s) => s.floorId === id)
 
-  const newSpots: ParkingSpot[] = layoutSpots.map((ls) => {
+  const newSpots: ParkingSpot[] = uniqueLayoutSpots.map((ls) => {
     const existing = ls.id ? existingFloorSpots.find((s) => s.id === ls.id) : undefined
     if (existing) {
       return { ...existing, number: ls.number, x: ls.x, y: ls.y }
