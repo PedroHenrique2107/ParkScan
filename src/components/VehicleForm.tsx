@@ -1,7 +1,12 @@
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import type { Floor, ParkingSpot, Vehicle } from '../types'
 import { isPlateCurrentlyParked, registerVehicle, updateVehicle } from '../services/vehicleService'
-import { formatPlate, isValidPlate } from '../lib/plate'
+import {
+  formatPlateByType,
+  getNextPlateInputMode,
+  isMercosulPlate,
+  isValidPlateByType,
+} from '../lib/plate'
 import { CAR_MODELS } from '../data/carModels'
 import Autocomplete from './Autocomplete'
 import { XIcon } from './Icons'
@@ -20,18 +25,44 @@ const LABEL = 'block text-xs font-semibold text-gray-500 uppercase tracking-wide
 
 export default function VehicleForm({ floor, spot, vehicle, onSave, onClose }: VehicleFormProps) {
   const [plate, setPlate] = useState(vehicle?.plate ?? '')
+  const [mercosul, setMercosul] = useState(() => vehicle ? isMercosulPlate(vehicle.plate) : false)
   const [model, setModel] = useState(vehicle?.model ?? '')
   const [observation, setObservation] = useState(vehicle?.observation ?? '')
   const [error, setError] = useState('')
+  const plateInputMode = getNextPlateInputMode(plate, mercosul)
+  const plateInputRef = useRef<HTMLInputElement>(null)
+  const restorePlateFocus = useRef(false)
+
+  useLayoutEffect(() => {
+    if (!restorePlateFocus.current) return
+
+    plateInputRef.current?.focus()
+    plateInputRef.current?.setSelectionRange(plate.length, plate.length)
+    restorePlateFocus.current = false
+  }, [plate, plateInputMode])
 
   function handlePlate(val: string) {
-    setPlate(formatPlate(val))
+    const formattedPlate = formatPlateByType(val, mercosul)
+    const nextInputMode = getNextPlateInputMode(formattedPlate, mercosul)
+    restorePlateFocus.current =
+      nextInputMode !== plateInputMode && document.activeElement === plateInputRef.current
+    setPlate(formattedPlate)
+    setError('')
+  }
+
+  function handleMercosulChange(checked: boolean) {
+    setMercosul(checked)
+    setPlate(formatPlateByType(plate, checked))
+    setError('')
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!plate.trim()) { setError('Placa é obrigatória'); return }
-    if (!isValidPlate(plate)) { setError('Informe uma placa no formato ABC-1234 ou ABC1D23'); return }
+    if (!isValidPlateByType(plate, mercosul)) {
+      setError(`Informe uma placa no formato ${mercosul ? 'ABC1D23' : 'ABC-1234'}`)
+      return
+    }
     if (!model.trim()) { setError('Modelo é obrigatório'); return }
     if (isPlateCurrentlyParked(plate, vehicle?.id)) {
       setError('Esta placa já está registrada no pátio.')
@@ -94,15 +125,27 @@ export default function VehicleForm({ floor, spot, vehicle, onSave, onClose }: V
           <div>
             <label htmlFor="plate" className={LABEL}>Placa *</label>
             <input
+              key={plateInputMode}
+              ref={plateInputRef}
               id="plate"
               type="text"
               value={plate}
               onChange={(e) => handlePlate(e.target.value)}
-              placeholder="ABC-1234 ou ABC1D23"
+              placeholder={mercosul ? 'ABC1D23' : 'ABC-1234'}
               className={INPUT}
-              inputMode="text"
+              inputMode={plateInputMode}
               autoCapitalize="characters"
+              autoComplete="off"
             />
+            <label className="mt-2.5 inline-flex items-center gap-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={mercosul}
+                onChange={(e) => handleMercosulChange(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 accent-blue-600"
+              />
+              Placa Mercosul
+            </label>
           </div>
 
           <div>
