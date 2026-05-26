@@ -21,12 +21,47 @@ npm install
 # Rodar em desenvolvimento
 npm run dev
 
+# Rodar no celular pela mesma rede Wi-Fi
+npm run dev:lan
+
 # Gerar build de produção
 npm run build
 
 # Pré-visualizar build
 npm run preview
+
+# Pre-visualizar build no celular pela mesma rede Wi-Fi
+npm run preview:lan
 ```
+
+## Acessar pelo celular na mesma rede Wi-Fi
+
+1. Conecte o computador e o celular na mesma rede Wi-Fi.
+2. Rode o app expondo o Vite na rede local:
+
+```bash
+npm run dev:lan
+```
+
+3. Descubra o IP local do computador no Windows:
+
+```powershell
+ipconfig
+```
+
+Procure o `Endereco IPv4` do adaptador Wi-Fi. Depois abra no navegador do celular:
+
+```text
+http://SEU-IP:5173
+```
+
+Exemplo:
+
+```text
+http://192.168.1.25:5173
+```
+
+Se nao abrir, confira se o firewall do Windows liberou o Node.js/Vite para redes privadas.
 
 ## Deploy na Vercel
 

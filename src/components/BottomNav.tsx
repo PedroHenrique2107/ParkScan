@@ -3,7 +3,7 @@ import { HomeIcon, MapIcon, SearchIcon, ClockIcon } from './Icons'
 
 const tabs = [
   { to: '/', label: 'Início', Icon: HomeIcon },
-  { to: '/floors', label: 'Pisos', Icon: MapIcon },
+  { to: '/floor-map', label: 'Mapa', Icon: MapIcon },
   { to: '/search', label: 'Buscar', Icon: SearchIcon },
   { to: '/history', label: 'Histórico', Icon: ClockIcon },
 ]

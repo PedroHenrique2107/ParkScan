@@ -8,15 +8,17 @@ import { SearchIcon, MapIcon, ClockIcon, CogIcon, CarIcon } from '../components/
 
 export default function HomePage() {
   const navigate = useNavigate()
-  const [stats, setStats] = useState({ vehicles: 0, freeSpots: 0, movedToday: 0 })
+  const [stats, setStats] = useState({ vehicles: 0, freeSpots: 0, movedToday: 0, totalSpots: 0 })
 
   const load = useCallback(() => {
     const floors = getFloors()
     const activeVehicles = getActiveVehicles()
 
     let totalFree = 0
+    let totalSpots = 0
     for (const floor of floors) {
       const spots = getSpotsByFloor(floor.id)
+      totalSpots += spots.length
       totalFree += spots.filter((s) => !s.vehicleId).length
     }
 
@@ -24,19 +26,24 @@ export default function HomePage() {
       vehicles: activeVehicles.length,
       freeSpots: totalFree,
       movedToday: getTodayHistory().length,
+      totalSpots,
     })
   }, [])
 
+<<<<<<< HEAD
   useEffect(() => { load() }, [load])
 
   useEffect(() => {
     window.addEventListener(APP_REFRESH_EVENT, load)
     return () => window.removeEventListener(APP_REFRESH_EVENT, load)
   }, [load])
+=======
+  const occupancyPct = stats.totalSpots > 0 ? Math.round((stats.vehicles / stats.totalSpots) * 100) : 0
+>>>>>>> develop
 
   const buttons = [
     { label: 'Buscar Veículo', icon: SearchIcon, to: '/search', color: 'bg-blue-600 text-white' },
-    { label: 'Mapa de Pisos', icon: MapIcon, to: '/floors', color: 'bg-indigo-600 text-white' },
+    { label: 'Mapa de Pisos', icon: MapIcon, to: '/floor-map', color: 'bg-indigo-600 text-white' },
     { label: 'Histórico do Dia', icon: ClockIcon, to: '/history', color: 'bg-violet-600 text-white' },
     { label: 'Configurar Pisos', icon: CogIcon, to: '/floors', color: 'bg-gray-700 text-white' },
   ]
@@ -76,6 +83,32 @@ export default function HomePage() {
             color="bg-white"
             valueColor="text-violet-600"
           />
+        </div>
+        <div className="mt-3 rounded-2xl border border-blue-50 bg-white px-4 py-3 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Ocupacao do patio</p>
+              <p className="mt-0.5 text-sm font-semibold text-gray-800">
+                {stats.vehicles} ocupadas
+                <span className="font-medium text-gray-400"> / {stats.freeSpots} livres</span>
+              </p>
+            </div>
+            <div className="shrink-0 rounded-full bg-blue-50 px-3 py-1 text-sm font-bold text-blue-600">
+              {occupancyPct}%
+            </div>
+          </div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-100">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500"
+              style={{ width: `${occupancyPct}%` }}
+              aria-hidden="true"
+            />
+          </div>
+          <div className="mt-2 flex items-center justify-between text-[11px] font-medium text-gray-400">
+            <span>0%</span>
+            <span>{stats.totalSpots} vagas</span>
+            <span>100%</span>
+          </div>
         </div>
       </div>
 

@@ -7,9 +7,10 @@ import { CarIcon, PlusIcon, TrashIcon } from '../components/Icons'
 const INPUT =
   'w-full px-4 py-3.5 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
 const LABEL = 'block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5'
-const SPOT_SIZE = 56
-const SPOT_GAP = 64
+const SPOT_SIZE = 80
+const SPOT_GAP = 84
 const SNAP_TOLERANCE = 16
+const LAYOUT_ZOOM = 0.82
 
 interface LayoutSpot {
   id: string
@@ -23,17 +24,66 @@ function generateDefaultLayout(): LayoutSpot[] {
   let n = 1
   for (let row = 0; row < 5; row++) {
     for (let col = 0; col < 2; col++) {
-      spots.push({ id: `new-${n}`, number: String(n).padStart(2, '0'), x: col * 64, y: row * 64 })
+      spots.push({ id: `new-${n}`, number: String(n).padStart(2, '0'), x: col * SPOT_GAP, y: row * SPOT_GAP })
       n++
     }
   }
   for (let row = 0; row < 5; row++) {
     for (let col = 0; col < 2; col++) {
-      spots.push({ id: `new-${n}`, number: String(n).padStart(2, '0'), x: 192 + col * 64, y: row * 64 })
+      spots.push({ id: `new-${n}`, number: String(n).padStart(2, '0'), x: SPOT_GAP * 3 + col * SPOT_GAP, y: row * SPOT_GAP })
       n++
     }
   }
   return spots
+}
+
+function snapToGrid(value: number): number {
+  return Math.max(0, Math.round(value / SPOT_GAP) * SPOT_GAP)
+}
+
+function snapPosition(position: Pick<LayoutSpot, 'x' | 'y'>): Pick<LayoutSpot, 'x' | 'y'> {
+  return {
+    x: snapToGrid(position.x),
+    y: snapToGrid(position.y),
+  }
+}
+
+function positionKey(position: Pick<LayoutSpot, 'x' | 'y'>): string {
+  return `${position.x}:${position.y}`
+}
+
+function findNextFreeGridPosition(
+  usedPositions: Set<string>,
+  startPosition: Pick<LayoutSpot, 'x' | 'y'>,
+): Pick<LayoutSpot, 'x' | 'y'> {
+  let row = Math.floor(startPosition.y / SPOT_GAP)
+  let col = Math.floor(startPosition.x / SPOT_GAP)
+
+  while (usedPositions.has(positionKey({ x: col * SPOT_GAP, y: row * SPOT_GAP }))) {
+    col++
+    if (col >= 6) {
+      col = 0
+      row++
+    }
+  }
+
+  return { x: col * SPOT_GAP, y: row * SPOT_GAP }
+}
+
+function organizeLayoutSpots(spots: LayoutSpot[]): LayoutSpot[] {
+  const usedPositions = new Set<string>()
+
+  return [...spots]
+    .sort((a, b) => a.y - b.y || a.x - b.x)
+    .map((spot) => {
+      const snappedPosition = snapPosition(spot)
+      const position = usedPositions.has(positionKey(snappedPosition))
+        ? findNextFreeGridPosition(usedPositions, snappedPosition)
+        : snappedPosition
+
+      usedPositions.add(positionKey(position))
+      return { ...spot, ...position }
+    })
 }
 
 function getUniqueCoordinates(values: number[]): number[] {
@@ -114,6 +164,31 @@ function getLogicalSpotNumber(
   return String(baseTotal + extraRowIndex * columns.length + columnIndex + 1).padStart(2, '0')
 }
 
+function getAvailableSpotNumber(spots: LayoutSpot[], preferredNumber: string): string {
+  const usedNumbers = new Set(spots.map((spot) => spot.number))
+  if (!usedNumbers.has(preferredNumber)) return preferredNumber
+
+  let nextNumber = 1
+  while (usedNumbers.has(String(nextNumber).padStart(2, '0'))) {
+    nextNumber++
+  }
+
+  return String(nextNumber).padStart(2, '0')
+}
+
+function ensureUniqueSpotNumbers(spots: LayoutSpot[]): LayoutSpot[] {
+  const normalized: LayoutSpot[] = []
+
+  for (const spot of spots) {
+    normalized.push({
+      ...spot,
+      number: getAvailableSpotNumber(normalized, spot.number),
+    })
+  }
+
+  return normalized
+}
+
 export default function FloorConfigPage() {
   const navigate = useNavigate()
   const { floorId } = useParams<{ floorId: string }>()
@@ -122,9 +197,9 @@ export default function FloorConfigPage() {
   const [name, setName] = useState('')
   const [layoutSpots, setLayoutSpots] = useState<LayoutSpot[]>([])
   const [error, setError] = useState('')
-  const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [draggingId, setDraggingId] = useState<string | null>(null)
-  const dragOffsetRef = useRef({ startMouseX: 0, startMouseY: 0, startSpotX: 0, startSpotY: 0 })
+  const dragOffsetRef = useRef({ startMouseX: 0, startMouseY: 0, startSpotX: 0, startSpotY: 0, moved: false })
   const canvasRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -134,12 +209,12 @@ export default function FloorConfigPage() {
         setName(floor.name)
         const spots = getSpotsByFloor(floorId)
         setLayoutSpots(
-          spots.map((s, i) => ({
+          ensureUniqueSpotNumbers(organizeLayoutSpots(spots.map((s, i) => ({
             id: s.id,
             number: s.number,
-            x: s.x ?? (i % 4) * 64,
-            y: s.y ?? Math.floor(i / 4) * 64,
-          })),
+            x: s.x ?? (i % 4) * SPOT_GAP,
+            y: s.y ?? Math.floor(i / 4) * SPOT_GAP,
+          })))),
         )
       }
     }
@@ -151,14 +226,23 @@ export default function FloorConfigPage() {
     function onMove(e: PointerEvent) {
       const dx = e.clientX - dragOffsetRef.current.startMouseX
       const dy = e.clientY - dragOffsetRef.current.startMouseY
-      const newX = Math.max(0, dragOffsetRef.current.startSpotX + dx)
-      const newY = Math.max(0, dragOffsetRef.current.startSpotY + dy)
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+        dragOffsetRef.current.moved = true
+      }
+      const position = snapPosition({
+        x: dragOffsetRef.current.startSpotX + dx / LAYOUT_ZOOM,
+        y: dragOffsetRef.current.startSpotY + dy / LAYOUT_ZOOM,
+      })
       setLayoutSpots((prev) =>
-        prev.map((s) => (s.id === draggingId ? { ...s, x: newX, y: newY } : s)),
+        prev.map((s) => (s.id === draggingId ? { ...s, ...position } : s)),
       )
     }
 
     function onUp() {
+      if (!dragOffsetRef.current.moved) {
+        setSelectedId((selected) => selected === draggingId ? null : draggingId)
+      }
+      setLayoutSpots((prev) => organizeLayoutSpots(prev))
       setDraggingId(null)
     }
 
@@ -177,6 +261,7 @@ export default function FloorConfigPage() {
       startMouseY: e.clientY,
       startSpotX: spot.x,
       startSpotY: spot.y,
+      moved: false,
     }
     setDraggingId(spot.id)
   }
@@ -184,12 +269,13 @@ export default function FloorConfigPage() {
   function handleAddSpot() {
     setLayoutSpots((prev) => {
       const position = getNextSpotPosition(prev)
+      const number = getAvailableSpotNumber(prev, getLogicalSpotNumber(prev, position))
 
       return [
         ...prev,
         {
           id: `new-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          number: getLogicalSpotNumber(prev, position),
+          number,
           ...position,
         },
       ]
@@ -198,8 +284,8 @@ export default function FloorConfigPage() {
 
   const canvasDims = useMemo(
     () => ({
-      width: Math.max(400, layoutSpots.reduce((m, s) => Math.max(m, s.x + SPOT_SIZE + 24), 0)),
-      height: Math.max(380, layoutSpots.reduce((m, s) => Math.max(m, s.y + SPOT_SIZE + 24), 0)),
+      width: Math.max(320, layoutSpots.reduce((m, s) => Math.max(m, (s.x + SPOT_SIZE) * LAYOUT_ZOOM + 24), 0)),
+      height: Math.max(320, layoutSpots.reduce((m, s) => Math.max(m, (s.y + SPOT_SIZE) * LAYOUT_ZOOM + 24), 0)),
     }),
     [layoutSpots],
   )
@@ -210,10 +296,11 @@ export default function FloorConfigPage() {
       setError('O nome do piso é obrigatório.')
       return
     }
+    const organizedSpots = ensureUniqueSpotNumbers(organizeLayoutSpots(layoutSpots))
     if (isEdit && floorId) {
-      updateFloor(floorId, name.trim(), '', layoutSpots)
+      updateFloor(floorId, name.trim(), '', organizedSpots)
     } else {
-      createFloor(name.trim(), '', layoutSpots)
+      createFloor(name.trim(), '', organizedSpots)
     }
     navigate('/floors')
   }
@@ -280,12 +367,19 @@ export default function FloorConfigPage() {
             >
               Carregar Layout Padrão
             </button>
+            <button
+              type="button"
+              onClick={() => setLayoutSpots((prev) => organizeLayoutSpots(prev))}
+              className="inline-flex items-center px-4 py-2 rounded-xl border border-blue-100 bg-blue-50 text-blue-700 text-sm font-semibold hover:bg-blue-100 active:bg-blue-100 transition-colors touch-manipulation"
+            >
+              Organizar Automaticamente
+            </button>
           </div>
 
           {/* Canvas */}
           <div
             className="overflow-auto rounded-xl border-2 border-dashed border-gray-200"
-            style={{ minHeight: 380 }}
+            style={{ minHeight: 320 }}
           >
             <div
               ref={canvasRef}
@@ -294,7 +388,7 @@ export default function FloorConfigPage() {
                 width: canvasDims.width,
                 height: canvasDims.height,
                 minWidth: '100%',
-                minHeight: 380,
+                minHeight: 320,
               }}
             >
               {layoutSpots.length === 0 && (
@@ -315,28 +409,29 @@ export default function FloorConfigPage() {
                         : 'border-blue-200 bg-white hover:border-blue-400 hover:shadow-md z-10 cursor-grab'
                     }`}
                   style={{
-                    left: spot.x,
-                    top: spot.y,
+                    left: spot.x * LAYOUT_ZOOM,
+                    top: spot.y * LAYOUT_ZOOM,
                     width: SPOT_SIZE,
                     height: SPOT_SIZE,
+                    transform: `scale(${LAYOUT_ZOOM})`,
+                    transformOrigin: 'top left',
                     touchAction: 'none',
                   }}
                   onPointerDown={(e) => startDrag(e, spot)}
-                  onMouseEnter={() => setHoveredId(spot.id)}
-                  onMouseLeave={() => setHoveredId(null)}
                 >
                   <CarIcon className="w-5 h-5 text-blue-500 pointer-events-none" />
                   <span className="text-[10px] font-bold text-blue-600 mt-0.5 pointer-events-none">
                     {spot.number}
                   </span>
 
-                  {hoveredId === spot.id && draggingId !== spot.id && (
+                  {selectedId === spot.id && draggingId !== spot.id && (
                     <button
                       type="button"
                       onPointerDown={(e) => e.stopPropagation()}
-                      onClick={() =>
+                      onClick={() => {
                         setLayoutSpots((prev) => prev.filter((s) => s.id !== spot.id))
-                      }
+                        setSelectedId(null)
+                      }}
                       className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 z-30 text-xs leading-none"
                     >
                       ×
@@ -356,8 +451,8 @@ export default function FloorConfigPage() {
           <p className="text-xs text-amber-600 mt-2 flex items-start gap-1">
             <span className="shrink-0">💡</span>
             <span>
-              Dica: Arraste as vagas para ajustar suas posições. Passe o mouse sobre uma vaga e
-              clique no X para removê-la.
+              Dica: Arraste as vagas para ajustar suas posições. Toque em uma vaga para
+              exibir o X e removê-la.
             </span>
           </p>
         </div>

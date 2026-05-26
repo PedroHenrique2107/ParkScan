@@ -19,6 +19,17 @@ export function getVehicleById(id: string): Vehicle | undefined {
   return repo.getVehicles().find((v) => v.id === id)
 }
 
+export function isPlateCurrentlyParked(plate: string, ignoredVehicleId?: string): boolean {
+  const normalizedPlate = cleanPlate(plate)
+
+  return repo.getVehicles().some(
+    (vehicle) =>
+      vehicle.id !== ignoredVehicleId &&
+      vehicle.status === 'PARKED' &&
+      cleanPlate(vehicle.plate) === normalizedPlate,
+  )
+}
+
 export function registerVehicle(
   plate: string,
   model: string,
@@ -26,6 +37,10 @@ export function registerVehicle(
   spotId: string,
   observation: string,
 ): Vehicle {
+  if (isPlateCurrentlyParked(plate)) {
+    throw new Error('Esta placa ja esta registrada no patio.')
+  }
+
   const vehicle: Vehicle = {
     id: genId(),
     plate: formatPlate(plate),
@@ -53,6 +68,10 @@ export function updateVehicle(id: string, plate: string, model: string, observat
   const vehicles = repo.getVehicles()
   const idx = vehicles.findIndex((v) => v.id === id)
   if (idx === -1) return
+  if (isPlateCurrentlyParked(plate, id)) {
+    throw new Error('Esta placa ja esta registrada no patio.')
+  }
+
   vehicles[idx] = {
     ...vehicles[idx],
     plate: formatPlate(plate),
