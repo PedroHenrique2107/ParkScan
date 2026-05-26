@@ -30,16 +30,14 @@ export default function HomePage() {
     })
   }, [])
 
-<<<<<<< HEAD
   useEffect(() => { load() }, [load])
 
   useEffect(() => {
     window.addEventListener(APP_REFRESH_EVENT, load)
     return () => window.removeEventListener(APP_REFRESH_EVENT, load)
   }, [load])
-=======
+
   const occupancyPct = stats.totalSpots > 0 ? Math.round((stats.vehicles / stats.totalSpots) * 100) : 0
->>>>>>> develop
 
   const buttons = [
     { label: 'Buscar Veículo', icon: SearchIcon, to: '/search', color: 'bg-blue-600 text-white' },
