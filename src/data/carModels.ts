@@ -67,4 +67,7 @@ export const CAR_MODELS: string[] = [
   'WR-V',
   'Yaris',
   'Zafira',
+  'Porshe',
+  'BMW',
+  'Lamborghini'
 ]
