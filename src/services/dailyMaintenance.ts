@@ -14,6 +14,10 @@ function hasParkedVehiclesFromAnotherDay(todayKey: string): boolean {
     )
 }
 
+/**
+ * Remove veículos ativos pertencentes a dias anteriores e libera suas vagas.
+ * A regra é intencionalmente local e não cria registros de histórico.
+ */
 export function runDailyMaintenance(): void {
   const todayKey = getTodayKey()
   const lastCleanup = repo.getLastDailyCleanup()

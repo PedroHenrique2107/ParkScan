@@ -5,6 +5,7 @@ function genId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`
 }
 
+/** Preserva a primeira ocorrência e renumera duplicatas com o menor número livre. */
 function ensureUniqueSpotNumbers<T extends { number: string }>(spots: T[]): T[] {
   const usedNumbers = new Set<string>()
 
@@ -33,6 +34,7 @@ export function getFloorById(id: string): Floor | undefined {
   return repo.getFloors().find((f) => f.id === id)
 }
 
+/** Persiste um novo piso e suas vagas já normalizadas. */
 export function createFloor(
   name: string,
   description: string,
@@ -63,6 +65,7 @@ export function createFloor(
   return floor
 }
 
+/** Atualiza metadados e reconstrói as vagas, preservando IDs ainda presentes. */
 export function updateFloor(
   id: string,
   name: string,

@@ -1,112 +1,83 @@
-# ConferePátio
+# ParkScan
 
-Aplicativo mobile-first para controle operacional de veículos em estacionamento.  
-Registre veículos por piso e vaga, localize rapidamente e marque quando um carro desceu para entrega.
+PWA mobile-first para controle operacional de veículos em estacionamentos. O aplicativo permite configurar pisos e vagas, registrar veículos, localizar carros estacionados e manter o histórico diário de entregas.
 
-## Tecnologias
+> Os dados são armazenados exclusivamente no `localStorage` do navegador. Atualmente não há servidor, autenticação, sincronização entre dispositivos ou backup automático.
 
-- React 18 + TypeScript
+## Stack
+
+- React 18 e TypeScript
 - Vite 5
 - Tailwind CSS 3
 - React Router 6
-- PWA (vite-plugin-pwa + Workbox)
-- LocalStorage (sem backend)
+- vite-plugin-pwa e Workbox
+- LocalStorage
 
-## Instalação e uso
+## Requisitos
+
+- Node.js 20 ou superior
+- npm 10 ou superior (recomendado)
+
+## Início rápido
 
 ```bash
-# Instalar dependências
 npm install
-
-# Rodar em desenvolvimento
 npm run dev
-
-# Rodar no celular pela mesma rede Wi-Fi
-npm run dev:lan
-
-# Gerar build de produção
-npm run build
-
-# Pré-visualizar build
-npm run preview
-
-# Pre-visualizar build no celular pela mesma rede Wi-Fi
-npm run preview:lan
 ```
 
-## Acessar pelo celular na mesma rede Wi-Fi
+Acesse `http://localhost:5173`.
 
-1. Conecte o computador e o celular na mesma rede Wi-Fi.
-2. Rode o app expondo o Vite na rede local:
+Para testar em um celular conectado à mesma rede:
 
 ```bash
 npm run dev:lan
 ```
 
-3. Descubra o IP local do computador no Windows:
+Abra `http://IP-DO-COMPUTADOR:5173` no celular. No Windows, use `ipconfig` para localizar o endereço IPv4. Caso não conecte, confirme que o firewall permite conexões privadas para o Node.js.
 
-```powershell
-ipconfig
-```
+## Scripts
 
-Procure o `Endereco IPv4` do adaptador Wi-Fi. Depois abra no navegador do celular:
+| Comando | Finalidade |
+| --- | --- |
+| `npm run dev` | Servidor local de desenvolvimento |
+| `npm run dev:lan` | Servidor acessível na rede local |
+| `npm run typecheck` | Verificação estática do TypeScript |
+| `npm run test` | Testes automatizados |
+| `npm run build` | Typecheck seguido do build de produção |
+| `npm run preview` | Pré-visualização do build |
+| `npm run preview:lan` | Pré-visualização acessível na rede local |
+
+## Estrutura resumida
 
 ```text
-http://SEU-IP:5173
+src/
+├── components/  Componentes visuais reutilizáveis
+├── data/        Catálogo versionado de marcas e modelos
+├── lib/         Funções utilitárias sem regra de tela
+├── pages/       Páginas associadas às rotas
+├── services/    Regras de negócio
+├── storage/     Persistência no navegador
+└── types/       Entidades do domínio
 ```
 
-Exemplo:
+## Documentação para desenvolvimento
 
-```text
-http://192.168.1.25:5173
+Leia o [guia completo de onboarding](docs/ONBOARDING.md) antes de alterar o projeto. Ele explica a arquitetura, o modelo de dados, todos os fluxos de negócio, o catálogo de veículos, testes, deploy, limitações e procedimentos de manutenção.
+
+## Validação antes de publicar
+
+```bash
+npm run typecheck
+npm run test
+npm run build
 ```
-
-Se nao abrir, confira se o firewall do Windows liberou o Node.js/Vite para redes privadas.
 
 ## Deploy na Vercel
 
-1. Faça push do projeto para o GitHub
-2. Acesse [vercel.com](https://vercel.com) e importe o repositório
-3. Framework: **Vite** (detectado automaticamente)
-4. Build command: `npm run build`
-5. Output directory: `dist`
-6. Clique em **Deploy**
+Importe o repositório como um projeto Vite e utilize:
 
-## Ícones PWA
+- Build command: `npm run build`
+- Output directory: `dist`
+- Node.js: 20 ou superior
 
-O ícone SVG em `public/icons/icon.svg` funciona na maioria dos navegadores modernos.  
-Para máxima compatibilidade Android/Chrome, gere os PNGs:
-
-```bash
-# Usando o pacote sharp (opcional)
-npx sharp-cli resize 192 --input public/icons/icon.svg --output public/icons/icon-192.png
-npx sharp-cli resize 512 --input public/icons/icon.svg --output public/icons/icon-512.png
-```
-
-Ou converta online em [svgtopng.com](https://svgtopng.com) e salve em `public/icons/`.
-
-## Estrutura do projeto
-
-```
-src/
-├── types/          # Tipos TypeScript (Floor, ParkingSpot, Vehicle, VehicleHistory)
-├── storage/        # Camada de acesso ao LocalStorage (trocar por Supabase aqui)
-├── services/       # Lógica de negócio (floorService, vehicleService, historyService)
-├── data/           # Lista de modelos de carros para autocomplete
-├── components/     # Componentes reutilizáveis
-└── pages/          # Telas da aplicação
-```
-
-## Migrando para backend (Supabase)
-
-Apenas substitua as funções em `src/storage/localStorageRepository.ts`  
-pelos clientes Supabase correspondentes. Os services e componentes não precisam mudar.
-
-## Funcionalidades
-
-- **Início** — resumo do dia (veículos no pátio, vagas livres, entregas)
-- **Pisos** — cadastro e gestão de pisos/andares com vagas geradas automaticamente
-- **Mapa de vagas** — grade visual, clique para registrar ou ver detalhes
-- **Busca** — pesquisa por placa, modelo, piso ou vaga em tempo real
-- **Histórico** — registro de todas as entregas do dia com filtros
-- **PWA** — instale na tela inicial do celular e use offline
+O arquivo `vercel.json` mantém o fallback de navegação necessário para as rotas do SPA.

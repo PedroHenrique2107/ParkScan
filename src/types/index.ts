@@ -1,3 +1,4 @@
+/** Piso/setor configurável que agrupa vagas de estacionamento. */
 export interface Floor {
   id: string
   name: string
@@ -8,6 +9,7 @@ export interface Floor {
   updatedAt: string
 }
 
+/** Vaga posicionada no mapa; `vehicleId` presente significa ocupação. */
 export interface ParkingSpot {
   id: string
   floorId: string
@@ -17,6 +19,7 @@ export interface ParkingSpot {
   y?: number
 }
 
+/** Registro operacional de um veículo, ativo ou já enviado para entrega. */
 export interface Vehicle {
   id: string
   plate: string
@@ -29,6 +32,7 @@ export interface Vehicle {
   movedDownAt?: string
 }
 
+/** Snapshot imutável criado no momento em que um veículo é entregue. */
 export interface VehicleHistory {
   id: string
   vehicleId: string
