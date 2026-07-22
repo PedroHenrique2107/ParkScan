@@ -1,3 +1,4 @@
+/** Retorna no máximo sete caracteres alfanuméricos em caixa alta. */
 export function cleanPlate(value: string): string {
   return value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7)
 }
@@ -10,6 +11,7 @@ export function isOldPlate(value: string): boolean {
   return /^[A-Z]{3}\d{4}$/.test(cleanPlate(value))
 }
 
+/** Aplica a máscara e descarta caracteres inválidos para o padrão selecionado. */
 export function formatPlateByType(value: string, mercosul: boolean): string {
   const raw = value.toUpperCase().replace(/[^A-Z0-9]/g, '')
   const pattern = mercosul

@@ -8,6 +8,10 @@ const KEYS = {
   LAST_DAILY_CLEANUP: 'cp:lastDailyCleanup',
 } as const
 
+/**
+ * Lê JSON sem derrubar a interface quando a chave não existe ou está corrompida.
+ * Não realiza validação estrutural; os services ainda recebem o tipo declarado.
+ */
 function safeGet<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key)

@@ -19,6 +19,7 @@ export function getVehicleById(id: string): Vehicle | undefined {
   return repo.getVehicles().find((v) => v.id === id)
 }
 
+/** Verifica duplicidade apenas entre veículos que continuam no pátio. */
 export function isPlateCurrentlyParked(plate: string, ignoredVehicleId?: string): boolean {
   const normalizedPlate = cleanPlate(plate)
 
@@ -30,6 +31,7 @@ export function isPlateCurrentlyParked(plate: string, ignoredVehicleId?: string)
   )
 }
 
+/** Cria o veículo ativo e associa seu ID à vaga selecionada. */
 export function registerVehicle(
   plate: string,
   model: string,
@@ -81,6 +83,7 @@ export function updateVehicle(id: string, plate: string, model: string, observat
   repo.saveVehicles(vehicles)
 }
 
+/** Entrega o veículo, libera a vaga e cria o snapshot no histórico. */
 export function markMovedDown(vehicleId: string): void {
   const vehicles = repo.getVehicles()
   const idx = vehicles.findIndex((v) => v.id === vehicleId)

@@ -7,7 +7,7 @@ import {
   isMercosulPlate,
   isValidPlateByType,
 } from '../lib/plate'
-import { CAR_MODELS } from '../data/carModels'
+import { CAR_MODEL_OPTIONS } from '../data/carModels'
 import Autocomplete from './Autocomplete'
 import { XIcon } from './Icons'
 
@@ -154,8 +154,8 @@ export default function VehicleForm({ floor, spot, vehicle, onSave, onClose }: V
               id="model"
               value={model}
               onChange={setModel}
-              suggestions={CAR_MODELS}
-              placeholder="Ex: Onix, HB20, Corolla..."
+              suggestions={CAR_MODEL_OPTIONS}
+              placeholder="Ex: Chevrolet Onix..."
               className={INPUT}
             />
           </div>
