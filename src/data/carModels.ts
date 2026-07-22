@@ -20,7 +20,7 @@ const VEHICLE_CATALOG: readonly BrandModels[] = [
   { brand: 'Agrale', models: ['Marruá'] },
   { brand: 'Alfa Romeo', models: ['145', '147', '156', '159', 'Giulia', 'Stelvio'] },
   { brand: 'Audi', models: ['A1', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'Q3', 'Q5', 'Q7', 'Q8', 'R8', 'TT', 'e-tron'] },
-  { brand: 'BMW', models: ['BMW Série 1', 'BMW Série 2', 'BMW Série 3', 'BMW Série 4', 'BMW Série 5', 'BMW Série 6', 'BMW Série 7', 'BMW X1', 'BMW X2', 'BMW X3', 'BMW X4', 'BMW X5', 'BMW X6', 'BMW X7', 'BMW XM', 'BMW Z4', 'BMW i3', 'BMW i4', 'BMW i5', 'BMW i7', 'BMW iX', 'BMW iX1', 'BMW iX3'] },
+  { brand: 'BMW', models: ['Série 1', 'Série 2', 'Série 3', 'Série 4', 'Série 5', 'Série 6', 'Série 7', 'X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'B7', 'XM', 'Z4', 'i3', 'i4', 'i5', 'i7', 'iX', 'iX1', 'iX3'] },
   { brand: 'BYD', models: ['Dolphin', 'Dolphin Mini', 'Han', 'King', 'Seal', 'Song Plus', 'Song Pro', 'Tan', 'Yuan Plus', 'Yuan Pro'] },
   { brand: 'CAOA Chery', models: ['Arrizo 5', 'Arrizo 6', 'Celer', 'Cielo', 'Face', 'iCar', 'QQ', 'Tiggo 2', 'Tiggo 3X', 'Tiggo 5X', 'Tiggo 7', 'Tiggo 7 Pro', 'Tiggo 8', 'Tiggo 8 Pro'] },
   { brand: 'Chevrolet', models: ['Agile', 'Astra', 'Blazer', 'Bolt', 'Camaro', 'Captiva', 'Celta', 'Chevette', 'Classic', 'Cobalt', 'Corsa', 'Cruze', 'Equinox', 'Ipanema', 'Kadett', 'Malibu', 'Marajó', 'Meriva', 'Monza', 'Montana', 'Omega', 'Onix', 'Onix Plus', 'Opala', 'Prisma', 'S10', 'Silverado', 'Sonic', 'Spin', 'Tracker', 'Trailblazer', 'Vectra', 'Veraneio', 'Zafira'] },
